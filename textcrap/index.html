@@ -1,0 +1,185 @@
+<html>
+<head>
+<title>THREE</title>
+<script src="three.min.js"></script>
+<script src="OrbitControls.js"></script>
+</head>
+<body>
+
+<script>
+
+function TextWrapper () {
+	
+}
+
+// options: string, size, color, lineLength, height, coords
+TextWrapper.prototype.Wrap = function ( options ) {
+	var group = new THREE.Object3D();
+	
+	// Save Starting Positions
+	var position = { 
+		x: options.coords.x, 
+		y: options.coords.y, 
+		z: options.coords.z 
+	};
+
+	var cutText = options.string;
+
+	var loader = new THREE.FontLoader();
+	loader.load( 'optimer_regular.typeface.json', function ( response ) {
+
+		var font = response;
+		
+		while( cutText.length > options.lineLength ) {
+
+			// Grab First part of string and render as new line. 
+			// Make sure string is cut at a space and not mid-word.
+			if( cutText.charAt(options.lineLength) === ' ' ) {
+
+				// cut line at space
+				var line = cutText.substring(0, options.lineLength);
+				cutText = cutText.slice( options.lineLength );
+
+			} else {
+
+				// search for closest space
+				var counter = 1;
+				while( cutText.charAt(options.lineLength - counter) !== ' ' ) {
+					counter++;
+				}
+
+				// cut line at space
+				var line = cutText.substring( 0, options.lineLength - counter );
+				cutText = cutText.slice( options.lineLength - counter );
+			}
+
+			line = line.trim();
+
+			// Create line geometry, material, and mesh
+			var textGeometry = new THREE.TextGeometry( line, { size: options.size, height: options.height, font: font } ),
+				textMaterial = new THREE.MeshLambertMaterial( { color: options.color } ),
+				textMesh = new THREE.Mesh( textGeometry, textMaterial );
+
+			// Set it's position, then offset y coord for next line
+			textMesh.position.set( position.x, position.y, position.z );
+			group.add( textMesh );
+			position.y -= options.size*2;
+
+		}
+
+		cutText = cutText.trim();
+		// If text is less than lineLength, just render one text geometry
+		var textGeometry = new THREE.TextGeometry( cutText, { size: options.size, height: options.height, font: font } ),
+			textMaterial = new THREE.MeshLambertMaterial({ color: options.color }),
+			textMesh = new THREE.Mesh( textGeometry, textMaterial );
+		
+		textMesh.position.set( position.x, position.y, position.z )
+		group.add( textMesh );
+	});
+	return group;
+
+}
+
+var renderBag = {};
+
+initFont();
+
+function initFont() {
+	var loader = new THREE.FontLoader();
+	loader.load( 'optimer_regular.typeface.json', function ( response ) {
+
+		font = response;
+
+		renderBag = buildScene(font);
+		animate(renderBag);
+
+	} );
+}
+
+function buildScene(font) {
+
+    var scene = new THREE.Scene();
+
+    var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 );
+    camera.position.z = 1000;
+	
+    var material = new THREE.MeshBasicMaterial( { color: 0xeeeeee, wireframe: false } );
+    //var textMaterial = new THREE.MeshBasicMaterial( { color: 0x555555, wireframe: false } );
+
+    var geometry = new THREE.PlaneGeometry( 800, 1100 );	
+	//var textGeo = createText("This is a test.", {font: font, size: 40, height: 1, curveSegments: 10, bevelThickness: 2, bevelSize: 1.5, bevelEnabled: false })
+	
+    var textContainer = new THREE.Mesh( geometry, material );
+	//var textMesh = new THREE.Mesh (textGeo, textMaterial );
+	
+	var textContent = "Here is the sample text that should wrap once it" + 
+					" hits the predefined line length of 40. This text is" +
+					" suspended in front of a grey plane that should serve" + 
+					" to frame it. Weird, this is a little wonky. It seems" +
+					" like the lineLength parameter is somehow directly related" + 
+					" to the size parameter. I don't know why that would be...";
+	
+	var wrapper = new TextWrapper();
+	var wrapText = wrapper.Wrap({ 
+		string: textContent, 
+		size: 25, 
+		color: 0x0000FF, 
+		lineLength: 40, 
+		height: .2, 
+		coords: {
+			 x: 0,
+			 y: 0,
+			 z: 0
+		} 
+	});
+	
+    scene.add( textContainer );
+	scene.add( wrapText );
+	wrapText.position.z += 50;
+	wrapText.position.x = textContainer.position.x - 300;
+	wrapText.position.y = textContainer.position.y + 420;
+
+    var renderer = new THREE.WebGLRenderer({ alpha: true });
+    renderer.setSize( window.innerWidth, window.innerHeight );
+
+    document.body.appendChild( renderer.domElement );
+
+	var cameraControls = new THREE.OrbitControls( camera, renderer.domElement );
+	cameraControls.target.set( 0, 0, 0 );
+	cameraControls.addEventListener( 'change', animate );
+	
+	return { scene: scene, camera: camera, mesh: textContainer, renderer: renderer };
+}
+
+function createText(text, textParams) {
+	var textGeo = new THREE.TextGeometry( text, {
+
+		font: textParams.font,
+
+		size: textParams.size,
+		height: textParams.height,
+		curveSegments: textParams.curveSegments,
+
+		bevelThickness: textParams.bevelThickness,
+		bevelSize: textParams.bevelSize,
+		bevelEnabled: textParams.bevelEnabled,
+
+		material: 0,
+		extrudeMaterial: 1
+
+	});
+	
+	return textGeo;
+}
+
+function animate() {
+	
+    requestAnimationFrame( animate );
+	renderBag.camera.lookAt( renderBag.scene.position );
+    renderBag.renderer.render( renderBag.scene, renderBag.camera );
+
+}
+
+</script>
+</body>
+</html>
