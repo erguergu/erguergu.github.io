@@ -148,6 +148,8 @@ function buildScene(font) {
 	cameraControls.target.set( 0, 0, 0 );
 	cameraControls.addEventListener( 'change', animate );
 	
+	renderer.render( scene, camera );
+	
 	return { scene: scene, camera: camera, mesh: textContainer, renderer: renderer };
 }
 
