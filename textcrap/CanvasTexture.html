@@ -10,7 +10,7 @@
 
 var renderBag = {};
 
-renderBag = buildScene(font);
+renderBag = buildScene();
 animate(renderBag);
 
 function buildScene() {
@@ -51,7 +51,7 @@ function buildScene() {
 	cameraControls.target.set( 0, 0, 0 );
 	cameraControls.addEventListener( 'change', animate );
 	
-	return { scene: scene, camera: camera, mesh: textContainer, renderer: renderer };
+	return { scene: scene, camera: camera, mesh: mesh1, renderer: renderer };
 }
 
 function animate() {
