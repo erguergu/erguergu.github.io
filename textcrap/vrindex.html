@@ -112,13 +112,8 @@ function buildScene(font) {
     camera.position.z = 2000;
 	
     var material = new THREE.MeshBasicMaterial( { color: 0xeeeeee, wireframe: false } );
-    //var textMaterial = new THREE.MeshBasicMaterial( { color: 0x555555, wireframe: false } );
-
     var geometry = new THREE.PlaneGeometry( 800, 1100 );	
-	//var textGeo = createText("This is a test.", {font: font, size: 40, height: 1, curveSegments: 10, bevelThickness: 2, bevelSize: 1.5, bevelEnabled: false })
-	
     var textContainer = new THREE.Mesh( geometry, material );
-	//var textMesh = new THREE.Mesh (textGeo, textMaterial );
 	
 	var textContent = "Here is the sample text that should wrap once it" + 
 					" hits the predefined line length of 40. This text is" +
@@ -143,7 +138,7 @@ function buildScene(font) {
 	
     scene.add( textContainer );
 	scene.add( wrapText );
-	wrapText.position.z += 50;
+	wrapText.position.z += 500;
 	wrapText.position.x = textContainer.position.x - 300;
 	wrapText.position.y = textContainer.position.y + 420;
 
