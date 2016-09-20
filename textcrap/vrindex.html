@@ -2,11 +2,18 @@
 <head>
 <title>THREE</title>
 <script src="three.min.js"></script>
-<script src="OrbitControls.js"></script>
+<script src="js/WebVR.js"></script>
+<script src="js/controls/VRControls.js"></script>
 </head>
 <body>
 
 <script>
+
+if ( WEBVR.isLatestAvailable() === false ) {
+
+	document.body.appendChild( WEBVR.getMessage() );
+
+}
 
 function TextWrapper () {
 	
@@ -60,7 +67,7 @@ TextWrapper.prototype.Wrap = function ( options ) {
 				textMaterial = new THREE.MeshLambertMaterial( { color: options.color } ),
 				textMesh = new THREE.Mesh( textGeometry, textMaterial );
 
-			// Set its position, then offset y coord for next line
+			// Set it's position, then offset y coord for next line
 			textMesh.position.set( position.x, position.y, position.z );
 			group.add( textMesh );
 			position.y -= options.size*2;
@@ -144,13 +151,12 @@ function buildScene(font) {
 
     document.body.appendChild( renderer.domElement );
 
-	var cameraControls = new THREE.OrbitControls( camera, renderer.domElement );
-	cameraControls.target.set( 0, 0, 0 );
-	cameraControls.addEventListener( 'change', animate );
+	var controls = new THREE.VRControls( camera );
+	var effect = new THREE.VREffect( renderer );
 	
 	renderer.render( scene, camera );
 	
-	return { scene: scene, camera: camera, mesh: textContainer, renderer: renderer };
+	return { scene: scene, camera: camera, mesh: textContainer, renderer: renderer, controls: controls, effect: effect };
 }
 
 function createText(text, textParams) {
@@ -175,9 +181,9 @@ function createText(text, textParams) {
 }
 
 function animate() {
-	
-	renderBag.camera.lookAt( renderBag.scene.position );
-    renderBag.renderer.render( renderBag.scene, renderBag.camera );
+
+	renderBag.controls.update();
+	renderBag.effect.render( renderBag.scene, renderBag.camera );
 
 }
 
