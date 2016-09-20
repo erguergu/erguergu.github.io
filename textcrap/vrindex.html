@@ -99,7 +99,7 @@ function initFont() {
 		font = response;
 
 		renderBag = buildScene(font);
-		animate(renderBag);
+		animate();
 
 	} );
 }
@@ -182,6 +182,13 @@ function createText(text, textParams) {
 }
 
 function animate() {
+
+	renderBag.effect.requestAnimationFrame( animate );
+	render();
+
+}
+
+function render() {
 
 	renderBag.controls.update();
 	renderBag.effect.render( renderBag.scene, renderBag.camera );
