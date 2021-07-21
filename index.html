@@ -13,7 +13,8 @@
 </head>
 <body>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script>
+    <script type="module">
+        import { OrbitControls } from './jsm/controls/OrbitControls.js';
 
         // need a scene
         const scene = new THREE.Scene();
@@ -23,7 +24,12 @@
 
         // antialias gets rid of the jaggies
         const renderer = new THREE.WebGLRenderer({antialias: true});
-
+ 
+        // controls
+        const controls = new OrbitControls( camera, renderer.domElement );
+        controls.maxPolarAngle = Math.PI * 0.5;
+        controls.minDistance = 1;
+        controls.maxDistance = 5000;
 
         // black background
         renderer.setClearColor("#000000");
