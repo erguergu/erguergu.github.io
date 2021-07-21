@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three JS Simple Quickstart</title>
+    <style>
+        /* clear margins, set height, make three js canvas a block element */
+        body { margin: 0; height: 100vh; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+
+        // need a scene
+        const scene = new THREE.Scene();
+
+        // camera aspect ratio starts out matching viewport aspect ratio
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+
+        // antialias gets rid of the jaggies
+        const renderer = new THREE.WebGLRenderer({antialias: true});
+
+
+        // black background
+        renderer.setClearColor("#000000");
+
+        // fill the whole viewport with the 3d scene
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        // need to add this to the DOM
+        document.body.appendChild(renderer.domElement);
+
+        // listen for window resize events
+        window.addEventListener('resize', () => {
+            
+            // make sure scene always matches viewport size and aspect ratio
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+
+            // make sure aspect ratio changes do not warp object shapes
+            camera.updateProjectionMatrix();
+        });
+
+        // particles
+        // const loader = new THREE.TextureLoader();
+        // const starTex = loader.load('./Untitled.png');
+        // const particlesGeometry = new THREE.BufferGeometry;
+        // const particlesCount = 5000;
+        // const posArray = new Float32Array(particlesCount * 3);
+        // for (let i = 0; i < particlesCount * 3; i++) {
+        //     posArray[i] = (Math.random() - .5) * 20;
+        // }
+        // particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        // const particleMat = new THREE.PointsMaterial({ size: .01, map: starTex, transparent: true, color: 'orange' });
+        // const particleMesh = new THREE.Points(particlesGeometry, particleMat);
+
+        // create torus particles
+        const loader = new THREE.TextureLoader();
+        const starTex = loader.load('./Untitled.png');
+        const particleGeo = new THREE.TorusGeometry( 1, 2.5, 250, 200 );
+        const particleMat = new THREE.PointsMaterial({ size: .02, map: starTex, transparent: true, color: 'orange' });
+        const particleMesh = new THREE.Points(particleGeo, particleMat);
+        particleMesh.scale.x = 5;
+        particleMesh.scale.y = 5;
+        particleMesh.scale.z = 20;
+        particleMesh.position.x = .6
+        particleMesh.position.y = -6.5;
+        particleMesh.position.z = -1;
+        particleMesh.rotation.y = Math.PI / 2;
+
+
+        // create our torusknot
+        const torusGeo = new THREE.TorusKnotGeometry();
+        const torusMat = new THREE.MeshLambertMaterial( { color: 0x0000FF } );
+        const torusKnot = new THREE.Mesh( torusGeo, torusMat );
+        const wireframe = new THREE.WireframeGeometry( torusGeo );
+        const line = new THREE.LineSegments( wireframe );
+        line.material.depthTest = true;
+        line.material.opacity = 0.25;
+        line.material.transparent = true;
+
+        // create our plane
+        const planeGeo = new THREE.PlaneGeometry(20, 10, 10);
+        const planeMat = new THREE.MeshLambertMaterial({color: 0x00FF44});
+        planeMat.side = THREE.DoubleSide;
+        const planeMesh = new THREE.Mesh(planeGeo, planeMat);
+
+        // create our lights
+        const light = new THREE.AmbientLight(0xFFFFFF, .4);
+        const directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
+
+
+        // set initial position and rotation of our objects and lights
+        camera.position.z = 5;
+
+        torusKnot.rotation.x = 1.5;
+        line.rotation.x = 1.5;
+        torusKnot.position.y = -1;
+        line.position.y = -1;
+        torusKnot.position.z = -1;
+        line.position.z = -1;
+
+        planeMesh.position.y = -2;
+        planeMesh.position.z = -2;
+
+        planeMesh.rotation.x = 1.5;
+
+        light.position.set(10,0,25);
+
+        directionalLight.position.x = 4; 
+        directionalLight.position.y = 4;
+
+        // add objects and lights to the scene
+        scene.add(torusKnot);
+        scene.add(line);
+        scene.add(planeMesh);
+        scene.add(directionalLight );
+        scene.add(light);
+        scene.add(particleMesh);
+        //scene.add(particleMesh);
+
+        var render = function () {
+            requestAnimationFrame(render);
+
+            torusKnot.rotation.z -= 0.01;
+            line.rotation.z -= 0.01;
+            particleMesh.rotation.z += .0002;
+            //particleMesh.rotation.y -= .0002;
+
+            renderer.render(scene, camera);
+        };
+        render();
+    </script>
+</body>
+</html>
