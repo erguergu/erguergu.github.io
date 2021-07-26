@@ -2,7 +2,7 @@ import {
 	Mesh,
 	ShaderMaterial,
 	SphereGeometry
-} from '../../../build/three.module.js';
+} from '/build/three.module.js';
 
 class LightProbeHelper extends Mesh {
 

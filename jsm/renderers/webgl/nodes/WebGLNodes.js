@@ -1,6 +1,6 @@
 import { WebGLNodeBuilder } from './WebGLNodeBuilder.js';
 
-import { Material } from '../../../../../build/three.module.js';
+import { Material } from '../..//build/three.module.js';
 
 function addCodeAfterSnippet( source, snippet, code ) {
 

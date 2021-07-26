@@ -15,12 +15,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script type="module">
         import { OrbitControls } from './jsm/controls/OrbitControls.js';
+        import { Planet } from './planet.js';
 
         // need a scene
         const scene = new THREE.Scene();
 
+        const minDistance = 1;
+        const maxDistance = 5000;
+
         // camera aspect ratio starts out matching viewport aspect ratio
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, minDistance, maxDistance);
 
         // antialias gets rid of the jaggies
         const renderer = new THREE.WebGLRenderer({antialias: true});
@@ -28,8 +32,8 @@
         // controls
         const controls = new OrbitControls( camera, renderer.domElement );
         controls.maxPolarAngle = Math.PI * 0.5;
-        controls.minDistance = 1;
-        controls.maxDistance = 5000;
+        controls.minDistance = minDistance;
+        controls.maxDistance = maxDistance;
 
         // black background
         renderer.setClearColor("#000000");
@@ -51,49 +55,101 @@
             camera.updateProjectionMatrix();
         });
 
-        // particles
-        // const loader = new THREE.TextureLoader();
-        // const starTex = loader.load('./Untitled.png');
-        // const particlesGeometry = new THREE.BufferGeometry;
-        // const particlesCount = 5000;
-        // const posArray = new Float32Array(particlesCount * 3);
-        // for (let i = 0; i < particlesCount * 3; i++) {
-        //     posArray[i] = (Math.random() - .5) * 20;
-        // }
-        // particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        // const particleMat = new THREE.PointsMaterial({ size: .01, map: starTex, transparent: true, color: 'orange' });
-        // const particleMesh = new THREE.Points(particlesGeometry, particleMat);
+        // load planets
+        const planets = [];
+        const sunMat = new THREE.MeshLambertMaterial({color: 0xFFFF00});
+        const moonMat = new THREE.MeshLambertMaterial({color: 0xDDDDDD});
+        const planetMat = new THREE.MeshLambertMaterial({color: 0xFFAAAA});
+        const planetMat2 = new THREE.MeshLambertMaterial({color: 0xEE3333});
+        const planetMat3 = new THREE.MeshLambertMaterial({color: 0xEE33FF});
+        const planetMat4 = new THREE.MeshLambertMaterial({color: 0xAAAAFF});
 
-        // create torus particles
-        const loader = new THREE.TextureLoader();
-        const starTex = loader.load('./Untitled.png');
-        const particleGeo = new THREE.TorusGeometry( 1, 2.5, 250, 200 );
-        const particleMat = new THREE.PointsMaterial({ size: .02, map: starTex, transparent: true, color: 'orange' });
-        const particleMesh = new THREE.Points(particleGeo, particleMat);
-        particleMesh.scale.x = 5;
-        particleMesh.scale.y = 5;
-        particleMesh.scale.z = 20;
-        particleMesh.position.x = .6
-        particleMesh.position.y = -6.5;
-        particleMesh.position.z = -1;
-        particleMesh.rotation.y = Math.PI / 2;
+        const star = new Planet({radius: 50, material: sunMat, showOrbit: false});
 
+        const planet1 = new Planet({
+            radius: 5, 
+            pivot: star, 
+            distance: 200, 
+            speed: 2, 
+            material: planetMat, 
+            initialRevolveAngle: 180,
+            showOrbit: true
+        });
 
-        // create our torusknot
-        const torusGeo = new THREE.TorusKnotGeometry();
-        const torusMat = new THREE.MeshLambertMaterial( { color: 0x0000FF } );
-        const torusKnot = new THREE.Mesh( torusGeo, torusMat );
-        const wireframe = new THREE.WireframeGeometry( torusGeo );
-        const line = new THREE.LineSegments( wireframe );
-        line.material.depthTest = true;
-        line.material.opacity = 0.25;
-        line.material.transparent = true;
+        const planet2 = new Planet({
+            radius: 10, 
+            pivot: star, 
+            distance: 300, 
+            speed: 3, 
+            initialRevolveAngle: 30
+        });
 
-        // create our plane
-        const planeGeo = new THREE.PlaneGeometry(20, 10, 10);
-        const planeMat = new THREE.MeshLambertMaterial({color: 0x00FF44});
-        planeMat.side = THREE.DoubleSide;
-        const planeMesh = new THREE.Mesh(planeGeo, planeMat);
+        const planet3 = new Planet({
+            radius: 7, 
+            pivot: star, 
+            distance: 400, 
+            speed: 4, 
+            material: planetMat3, 
+            initialRevolveAngle: 90
+        });
+
+        const planet4 = new Planet({
+            radius: 20, 
+            pivot: star, 
+            distance: 500, 
+            speed: 2, 
+            material: planetMat4, 
+            initialRevolveAngle: 0
+        });
+
+        const planet5 = new Planet({
+            radius: 7, 
+            pivot: star, 
+            distance: 600, 
+            speed: 5, 
+            initialRevolveAngle: 120
+        });
+
+        const planet1Moon1 = new Planet({
+            name: 'moon', 
+            radius: 2, 
+            pivot: planet1, 
+            distance: 20, 
+            speed: 10, 
+            material: moonMat, 
+            initialRevolveAngle: 160
+        });
+
+        const planet4Moon1 = new Planet({
+            name: 'moon2', 
+            radius: 2, 
+            pivot: planet4, 
+            distance: 30, 
+            speed: 20, 
+            material: moonMat, 
+            initialRevolveAngle: 60
+        });
+
+        const planet4Moon2 = new Planet({
+            name: 'moon3', 
+            radius: 2, 
+            pivot: planet4, 
+            distance: 40, 
+            speed: 10, 
+            material: moonMat, 
+            initialRevolveAngle: 150
+        });
+
+        planets.push(star);
+        planets.push(planet1);
+        planets.push(planet1Moon1);
+        planets.push(planet2);
+        planets.push(planet3);
+        planets.push(planet4);
+        planets.push(planet4Moon1);
+        planets.push(planet4Moon2);
+        planets.push(planet5);
+
 
         // create our lights
         const light = new THREE.AmbientLight(0xFFFFFF, .4);
@@ -101,41 +157,30 @@
 
 
         // set initial position and rotation of our objects and lights
-        camera.position.z = 5;
-
-        torusKnot.rotation.x = 1.5;
-        line.rotation.x = 1.5;
-        torusKnot.position.y = -1;
-        line.position.y = -1;
-        torusKnot.position.z = -1;
-        line.position.z = -1;
-
-        planeMesh.position.y = -2;
-        planeMesh.position.z = -2;
-
-        planeMesh.rotation.x = 1.5;
-
+        camera.position.z = 500;
+        camera.position.y = -50;
         light.position.set(10,0,25);
-
         directionalLight.position.x = 4; 
         directionalLight.position.y = 4;
+        
+
+        scene.add(light);
+        scene.add(directionalLight);
 
         // add objects and lights to the scene
-        scene.add(torusKnot);
-        scene.add(line);
-        scene.add(planeMesh);
-        scene.add(directionalLight );
-        scene.add(light);
-        scene.add(particleMesh);
-        //scene.add(particleMesh);
+        for (const planet of planets) {
+            scene.add(planet.mesh);
+            if (planet.showOrbit) {
+                scene.add(planet.orbitMesh);
+            }
+        }
 
         var render = function () {
             requestAnimationFrame(render);
 
-            torusKnot.rotation.z -= 0.01;
-            line.rotation.z -= 0.01;
-            particleMesh.rotation.z += .0002;
-            //particleMesh.rotation.y -= .0002;
+            for (const planet of planets) {
+                planet.tick();
+            }
 
             renderer.render(scene, camera);
         };

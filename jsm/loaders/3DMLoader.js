@@ -22,7 +22,7 @@ import {
 	LinearFilter,
 	ClampToEdgeWrapping,
 	TextureLoader
-} from '../../../build/three.module.js';
+} from '/build/three.module.js';
 
 const _taskCache = new WeakMap();
 

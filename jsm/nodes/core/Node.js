@@ -1,4 +1,4 @@
-import { MathUtils } from '../../../../build/three.module.js';
+import { MathUtils } from '..//build/three.module.js';
 
 class Node {
 
