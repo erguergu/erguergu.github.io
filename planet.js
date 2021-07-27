@@ -6,8 +6,8 @@ class Planet {
         , pivot = undefined
         , distance = 0
         , material = new THREE.MeshLambertMaterial({color: 0x0044FF})
-        , xRotate = .1
-        , yRotate = 0
+        , xRotate = 0
+        , yRotate = -.1
         , zRotate = 0
         , speed = 1
         , initialRevolveAngle = 0
@@ -57,7 +57,9 @@ class Planet {
 
     createCircle = () => {
         const material = new THREE.LineBasicMaterial({
-            color: 0xaaaaaa
+            color: 0xFFFFFF,
+            opacity: .2,
+            transparent: true
         });
         
         const points = [];
@@ -82,7 +84,7 @@ class Planet {
     tick = () => {
         this.rotate(this.xRotate, this.yRotate, this.zRotate);
 
-        this.revolve(.06 * this.speed);
+        this.revolve(.02 * this.speed);
     }
 
     rotate = (degreeX=0, degreeY=0, degreeZ=0) => {

@@ -21,10 +21,11 @@
         const scene = new THREE.Scene();
 
         const minDistance = 1;
-        const maxDistance = 5000;
+        const maxCamDistance = 8000;
+        const maxOrbDistance = 5000;
 
         // camera aspect ratio starts out matching viewport aspect ratio
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, minDistance, maxDistance);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, minDistance, maxCamDistance);
 
         // antialias gets rid of the jaggies
         const renderer = new THREE.WebGLRenderer({antialias: true});
@@ -33,7 +34,7 @@
         const controls = new OrbitControls( camera, renderer.domElement );
         controls.maxPolarAngle = Math.PI * 0.5;
         controls.minDistance = minDistance;
-        controls.maxDistance = maxDistance;
+        controls.maxDistance = maxOrbDistance;
 
         // black background
         renderer.setClearColor("#000000");
@@ -57,14 +58,15 @@
 
         // load planets
         const planets = [];
-        const sunMat = new THREE.MeshLambertMaterial({color: 0xFFFF00});
+        const sunMat =new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('sun.jpg')});
         const moonMat = new THREE.MeshLambertMaterial({color: 0xDDDDDD});
-        const planetMat = new THREE.MeshLambertMaterial({color: 0xFFAAAA});
-        const planetMat2 = new THREE.MeshLambertMaterial({color: 0xEE3333});
-        const planetMat3 = new THREE.MeshLambertMaterial({color: 0xEE33FF});
-        const planetMat4 = new THREE.MeshLambertMaterial({color: 0xAAAAFF});
+        const planetMat = new THREE.MeshLambertMaterial({color: 0xDDAACC});
+        const planetMat2 = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('earth.jpg')});
+        const planetMat3 = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('neptune.jpg')});
+        const planetMat4 =  new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('jupiter.jpg')});
+        const planetMat5 = new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('pluto.jpg')});
 
-        const star = new Planet({radius: 50, material: sunMat, showOrbit: false});
+        const star = new Planet({radius: 50, material: sunMat, yRotate: -.02, showOrbit: false});
 
         const planet1 = new Planet({
             radius: 5, 
@@ -81,6 +83,7 @@
             pivot: star, 
             distance: 300, 
             speed: 3, 
+            material: planetMat2,
             initialRevolveAngle: 30
         });
 
@@ -107,6 +110,7 @@
             pivot: star, 
             distance: 600, 
             speed: 5, 
+            material: planetMat5,
             initialRevolveAngle: 120
         });
 
@@ -184,6 +188,22 @@
 
             renderer.render(scene, camera);
         };
+
+
+        var drawSkybox = function () {
+            const loader = new THREE.CubeTextureLoader();
+            const texture = loader.load([
+                'space_left.jpg',
+                'space_right.jpg',
+                'space_up.jpg',
+                'space_down.jpg',
+                'space_front.jpg',
+                'space_back.jpg',
+            ]);
+            scene.background = texture;
+        }
+
+        drawSkybox();
         render();
     </script>
 </body>
