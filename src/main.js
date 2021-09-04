@@ -17,12 +17,13 @@ const ASTATE = { DISABLE_DEACTIVATION: 4 }
 const WorldParams = {
   MaxFall: -10,
   PlayerStart: { x: 7, y: 20, z: 7 },
-  PlayerFallReset: -20,
-  TerrainHeight: 35, //50
+  PlayerFallReset: -25,
+  TerrainHeight: 55, //50
   Gravity: -9,
-  GroundScale: [500, 500],
+  GroundScale: [1000, 1000],
   ScaleSegRatio: 1, // number of segments per ground scale (if it's .6, 1000 scale will have 600 segments)
-  HeightMapFile: './src/heightSimplex512.png'
+  HeightMapFile: './src/height500.png',
+  Shadows: true
 };
 
 const PlayerParams = {
@@ -101,10 +102,10 @@ class OrbitTests {
 
     // camera aspect ratio starts out matching viewport aspect ratio
     this._camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 5000);
-    //const camera = new THREE.OrthographicCamera(window.innerWidth/-2, window.innerWidth/2, window.innerHeight/2, window.innerHeight/-2, 1, 1000);
 
     // antialias gets rid of the jaggies
     const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.shadowMap.enabled = WorldParams.Shadows;
     this._canv = document.getElementById('maindiv');
 
     // black background
@@ -139,11 +140,10 @@ class OrbitTests {
     ]);
     this._scene.background = this._cubeTexture;
 
-    const flatArray = new Array(100 * 100);
     const widthSegments = Math.ceil(WorldParams.GroundScale[0] * WorldParams.ScaleSegRatio);
     const heightSegments = Math.ceil(WorldParams.GroundScale[1] * WorldParams.ScaleSegRatio);
     const groundHeightMapTexture = textures.groundHeightMapTexture;
-    this.loadTerrainHeightmapTexture(groundHeightMapTexture, widthSegments, heightSegments, flatArray);
+    const flatArray = this.loadTerrainHeightmapTexture(groundHeightMapTexture, widthSegments, heightSegments);
 
     const terrainHeight = WorldParams.TerrainHeight;
     this._groundPlane = this.createPlane("ground", 0xDD55FF, WorldParams.GroundScale, [0, 0, 0], [0, 0, 0], widthSegments, heightSegments, terrainHeight, flatArray);
@@ -191,8 +191,9 @@ class OrbitTests {
 
     light.position.set(10, 0, 25);
 
-    directionalLight.position.x = 4;
-    directionalLight.position.y = 4;
+    directionalLight.position.x = 10;
+    directionalLight.position.y = 10;
+    directionalLight.castShadow = WorldParams.Shadows;
 
     // add objects and lights to the scene
     this._scene.add(directionalLight);
@@ -209,12 +210,13 @@ class OrbitTests {
     render();
   }
 
-  loadTerrainHeightmapTexture = (texture, desiredWidth, desiredHeight, flatArray) => {
+  loadTerrainHeightmapTexture = (texture, desiredWidth, desiredHeight) => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     canvas.style.display = 'none';
     canvas.height = texture.height;
     canvas.width = texture.width;
+    const flatArray = new Array(texture.height * texture.width);
     const initial2d = new Array(texture.width);
     try {
       ctx.drawImage(texture, 0, 0);
@@ -246,6 +248,7 @@ class OrbitTests {
           flatArray[flatIndex++] = row[x];
         }
       }
+      return flatArray;
     } catch (ex) {
       console.log(`bad`, ex);
     }
@@ -391,9 +394,14 @@ class OrbitTests {
     const jumpAction = mixer.clipAction(playerJump.animations[0]);
     idleAction.play();
 
+    playerModel.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = WorldParams.Shadows;
+        child.receiveShadow = WorldParams.Shadows;
+      }
+    });
+
     obj3d.add(playerModel);
-    obj3d.add(playerIdle);
-    obj3d.add(playerWalk);
 
     this._scene.add(obj3d);
     obj3d.position.copy(position);
@@ -479,8 +487,8 @@ class OrbitTests {
     }
     if (doMesh) {
       const meshMaterial = new THREE.MeshPhongMaterial({
-        transparent: true,
-        opacity: .9,
+        transparent: false,
+        //opacity: .9,
         color: 0x7f00ff,
         emissive: 0xff,
         specular: 0x191900,
@@ -490,7 +498,10 @@ class OrbitTests {
         reflectivity: .6,
         side: THREE.DoubleSide
       });
-      mesh.add(new THREE.Mesh(geometry, meshMaterial));
+      const phongMesh = new THREE.Mesh(geometry, meshMaterial);      
+		  phongMesh.receiveShadow = WorldParams.Shadows;
+
+      mesh.add(phongMesh);
     }
 
     mesh.position.y = 0 - ((terrainMaxHeight - terrainMinHeight) / 2);

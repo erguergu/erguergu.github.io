@@ -107,7 +107,6 @@ class OrbitControls extends EventDispatcher {
 			const offset = new Vector3();
 			// so camera.up is the orbit axis
 			const quat = new Quaternion().setFromUnitVectors( object.up, new Vector3( 0, 1, 0 ) );
-			console.log(`quat:`, quat);
 			const quatInverse = quat.clone().invert();
 			const lastPosition = new Vector3();
 			const lastQuaternion = new Quaternion();
@@ -150,7 +149,6 @@ class OrbitControls extends EventDispatcher {
 				spherical.radius *= scale;
 				// restrict radius to be between desired limits
 				spherical.radius = Math.max( scope.minDistance, Math.min( scope.maxDistance, spherical.radius ) );
-				console.log(`spherical.radius: ${spherical.radius}`);
 				// move target to panned location
 				if ( scope.enableDamping === true ) {
 					scope.target.addScaledVector( panOffset, scope.dampingFactor );
