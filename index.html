@@ -14,121 +14,575 @@
 <body id="threejs">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
     <script>
-        function generateCubesOnSphere(numCubes, sphereRadius, cubeSize, pulsePeriodSeconds, pulseMagnitudePercent, planetRotationSpeed) {
-  // Set up the scene
-  var scene = new THREE.Scene();
+    const winWidth =
+  window.innerWidth ||
+  document.documentElement.clientWidth ||
+  document.body.clientWidth;
+const winHeight =
+  window.innerHeight ||
+  document.documentElement.clientHeight ||
+  document.body.clientHeight;
 
-  // Set up the camera
-  var camera = new THREE.PerspectiveCamera(
-    75,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    1000
-  );
-  camera.position.z = 5;
+console.log(`width: ${winWidth}, height: ${winHeight}`);
 
-  // Set up the renderer
-  var renderer = new THREE.WebGLRenderer();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
+class MazeNode {
+  constructor(index, allNodes, mazeSize) {
+    this.visited = false;
+    this.connectedNeighbors = [];
+    this.index = index;
+    this.allNodes = allNodes;
+    this.mazeSize = mazeSize;
+  }
 
-  // Set up the directional light
-  var light = new THREE.DirectionalLight(0xffffff, 1);
-  light.position.set(1, 1, 1);
-  scene.add(light);
+  getNeighborIndexes = () => {
+    // the order will be: down, up, left, right
+    // I think we have to insert nulls if it doesn't have
+    // a given neighbor.
+    const mazeSize = this.mazeSize;
+    let up = null;
+    let down = null;
+    let left = null;
+    let right = null;
 
-  // Define an array of bright colors
-  var brightColors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00];
+    // get 'down'
+    if (this.index > mazeSize - 1) {
+      down = this.index - mazeSize;
+    }
 
-  // Create an array of materials with the bright colors
-  var materials = brightColors.map(function(color) {
-    return new THREE.MeshPhongMaterial({ color: color, shininess: 30 });
-  });
+    // up
+    if (this.index < mazeSize * (mazeSize - 1)) {
+      up = this.index + mazeSize;
+    }
 
-  // Create the cubes and arrange them on a sphere
-  var phiIncrement = Math.PI * (3 - Math.sqrt(5)); // Golden angle
-  var cubes = [];
+    // left
+    if (this.index % mazeSize != 0) {
+      left = this.index - 1;
+    }
 
-  var planet = new THREE.Object3D(); // Parent object for cubes
+    // right
+    if ((this.index + 1) % mazeSize != 0) {
+      right = this.index + 1;
+    }
 
-  for (var i = 0; i < numCubes; i++) {
-    var y = 1 - (i / (numCubes - 1)) * 2; // Map to range [-1, 1]
+    return [down, up, left, right];
+  };
 
-    var radiusAtPhi = Math.sqrt(1 - y * y);
-    var theta = i * phiIncrement;
+  getUnvisitedNeighbors = () => {
+    const neighborIndexes = this.getNeighborIndexes();
+    const unvisitedNeighbors = [];
+    let unvisitedNeighborCount = 0;
+    for (const neighborIndex of neighborIndexes) {
+      let arrNeighbor = null;
+      if (neighborIndex != null) {
+        const neighbor = this.allNodes[neighborIndex];
+        if (!neighbor.visited) {
+          arrNeighbor = neighbor;
+          unvisitedNeighborCount++;
+        }
+      }
 
-    var x = Math.cos(theta) * radiusAtPhi;
-    var z = Math.sin(theta) * radiusAtPhi;
-
-    var cube = new THREE.Mesh(new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize), materials[Math.floor(Math.random() * materials.length)]);
-    cube.position.set(x, y, z).multiplyScalar(sphereRadius);
-
-    // Generate random rotation speed and direction for each cube
-    var rotationSpeed = Math.random() * 0.01 + 0.005; // Random speed between 0.005 and 0.015
-    var rotationDirectionX = Math.random() < 0.5 ? -1 : 1; // Random direction -1 or 1
-    var rotationDirectionY = Math.random() < 0.5 ? -1 : 1;
-    var rotationDirectionZ = Math.random() < 0.5 ? -1 : 1;
-
-    // Store rotation vector in cube's userData
-    cube.userData.rotation = new THREE.Vector3(
-      rotationSpeed * rotationDirectionX,
-      rotationSpeed * rotationDirectionY,
-      rotationSpeed * rotationDirectionZ
+      // this will produce an array with either nulls
+      // or actual neighbor nodes but only if they are unvisted.
+      unvisitedNeighbors.push(arrNeighbor);
+    }
+    console.log(
+      `node ${this.index} has ${unvisitedNeighborCount} unvisited neighbors`
     );
+    return unvisitedNeighbors;
+  };
 
-    planet.add(cube);
-    cubes.push(cube);
-  }
-
-  scene.add(planet);
-
-  // Animate the cubes and planet rotation
-  function animate() {
-    requestAnimationFrame(animate);
-
-    // Calculate the pulsating factor based on time and pulsePeriodSeconds
-    var pulsateFactor = 1 + Math.sin((Date.now() / (pulsePeriodSeconds * 1000)) * Math.PI * 2);
-
-    // Calculate the distance to move the cubes based on pulsating factor and pulseMagnitudePercent
-    var distance = sphereRadius * (pulseMagnitudePercent / 100) * pulsateFactor;
-
-    // Apply the distance to each cube's position
-    cubes.forEach(function(cube) {
-      cube.position.copy(cube.position.clone().normalize().multiplyScalar(sphereRadius + distance));
-    });
-
-    // Rotate each cube on the x, y, and z axes at random speed and direction
-    cubes.forEach(function(cube) {
-      var rotation = cube.userData.rotation;
-      cube.rotation.x += rotation.x;
-      cube.rotation.y += rotation.y;
-      cube.rotation.z += rotation.z;
-    });
-
-    // Rotate the planet about the x-axis
-    planet.rotation.x += planetRotationSpeed;
-
-    // Animate the background color
-    var hue = (Date.now() / 1000) % 360; // Cycle through hues over time
-    var color = new THREE.Color().setHSL(hue / 360, 1, 0.5);
-    renderer.setClearColor(color);
-
-    renderer.render(scene, camera);
-  }
-
-  animate();
+  getUnvisitedNeighborCount = () => {
+    let theCount = 0;
+    for (const index of this.getNeighborIndexes()) {
+      if (index != null) {
+        const node = this.allNodes[index];
+        if (!node.visited) {
+          theCount++;
+        }
+      }
+    }
+    return theCount;
+  };
 }
 
-// Usage with custom parameters
-var numCubes = 4000;
-var sphereRadius = 1;
-var cubeSize = 0.05;
-var pulsePeriodSeconds = 300;
-var pulseMagnitudePercent = 100;
-var planetRotationSpeed = 0.001;
+// Create a scene
+const scene = new THREE.Scene();
+var camera = new THREE.OrthographicCamera(1, 1, 1, 1, 0, 1000);
 
-generateCubesOnSphere(numCubes, sphereRadius, cubeSize, pulsePeriodSeconds, pulseMagnitudePercent, planetRotationSpeed);
+scene.add(camera);
 
+let moveX = 0;
+let moveY = 0;
+let zoomAmount = 0;
+let gSize = 30;
+const minGSize = 1;
+const maxGSize = 500;
+
+const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+directionalLight.position.set(1, 1, 1); // Position the light at a 45-degree diagonal angle
+scene.add(directionalLight);
+scene.add(directionalLight.target);
+
+// Create an ambient light
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.3); // Brighter ambient light
+scene.add(ambientLight);
+
+const size = 2;
+const divisions = 20;
+
+const gridHelper = new THREE.GridHelper(size, divisions);
+gridHelper.rotation.x = Math.PI / 2;
+scene.add(gridHelper);
+
+// Create a renderer
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+let cubes = [];
+let hWalls = [];
+let vWalls = [];
+let corners = [];
+
+let mazeNodes = [];
+let currentPath = [];
+let autoGen = true;
+let isGeneratingMaze = false;
+let currentNode = null;
+
+function clearMaze() {
+  console.log(`Will clear the maze... There are ${cubes.length} cubes...`);
+  for (const cube of cubes) {
+    scene.remove(cube);
+  }
+  for (const hWall of hWalls) {
+    scene.remove(hWall);
+  }
+  for (const vWall of vWalls) {
+    scene.remove(vWall);
+  }
+  for (const corner of corners) {
+    scene.remove(corner);
+  }
+  cubes = [];
+  hWalls = [];
+  vWalls = [];
+  corners = [];
+  mazeNodes = [];
+  currentPath = [];
+  isGeneratingMaze = false;
+  currentNode = null;
+}
+
+const cubeSize = 0.4;
+const cubeSpacing = 0.1;
+
+const geometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
+const material = new THREE.MeshLambertMaterial({ color: 0x00ffff });
+const unvisMat = new THREE.MeshLambertMaterial({ color: 0x00ff00 });
+
+const hGeo = new THREE.BoxGeometry(cubeSize, cubeSpacing, cubeSize);
+const wallMat = new THREE.MeshLambertMaterial({ color: 0x9900ff });
+const vGeo = new THREE.BoxGeometry(cubeSpacing, cubeSize, cubeSize);
+const vMat = new THREE.MeshLambertMaterial({ color: 0x0099ff });
+
+const cornGeo = new THREE.BoxGeometry(cubeSpacing, cubeSpacing, cubeSize);
+
+function drawGrid(gridSize) {
+  clearMaze();
+  setUpCamera(gridSize);
+
+  for (let x = 0; x < gridSize; x++) {
+    const hWall1 = new THREE.Mesh(hGeo, wallMat);
+    hWall1.position.x = x * (cubeSize + cubeSpacing) + cubeSize / 2;
+    hWall1.position.y = 0 - cubeSpacing / 2;
+    scene.add(hWall1);
+    hWalls.push(hWall1);
+  }
+
+  for (let x = 0; x <= gridSize; x++) {
+    const corner = new THREE.Mesh(cornGeo, wallMat);
+    corner.position.x = x * (cubeSize + cubeSpacing) - cubeSpacing / 2;
+    corner.position.y = -cubeSpacing / 2;
+    scene.add(corner);
+    corners.push(corner);
+  }
+
+  let index = 0;
+  for (let y = 0; y < gridSize; y++) {
+    for (let x = 0; x < gridSize; x++) {
+      const cube = new THREE.Mesh(geometry, unvisMat);
+      cube.position.x = x * (cubeSize + cubeSpacing) + cubeSize / 2;
+      cube.position.y = y * (cubeSize + cubeSpacing) + cubeSize / 2;
+
+      scene.add(cube);
+      cubes.push(cube);
+      mazeNodes.push(new MazeNode(index++, mazeNodes, gridSize));
+
+      const hWall = new THREE.Mesh(hGeo, wallMat);
+      hWall.position.x = x * (cubeSize + cubeSpacing) + cubeSize / 2;
+      hWall.position.y =
+        y * (cubeSize + cubeSpacing) + cubeSize + cubeSpacing / 2;
+      scene.add(hWall);
+      hWalls.push(hWall);
+
+      if (x == 0) {
+        const vWall1 = new THREE.Mesh(vGeo, wallMat);
+        vWall1.position.x = 0 - cubeSpacing / 2;
+        vWall1.position.y = y * (cubeSize + cubeSpacing) + cubeSize / 2;
+        scene.add(vWall1);
+        vWalls.push(vWall1);
+      }
+      const vWall = new THREE.Mesh(vGeo, wallMat);
+      vWall.position.x =
+        x * (cubeSize + cubeSpacing) + cubeSize + cubeSpacing / 2;
+      vWall.position.y = y * (cubeSize + cubeSpacing) + cubeSize / 2;
+      scene.add(vWall);
+      vWalls.push(vWall);
+
+      const corner = new THREE.Mesh(cornGeo, wallMat);
+      corner.position.x = x * (cubeSize + cubeSpacing) - cubeSpacing / 2;
+      corner.position.y =
+        y * (cubeSize + cubeSpacing) + cubeSize + cubeSpacing / 2;
+      scene.add(corner);
+      corners.push(corner);
+
+      if (x == gridSize - 1) {
+        const lastCorn = new THREE.Mesh(cornGeo, wallMat);
+        lastCorn.position.x =
+          (x + 1) * (cubeSize + cubeSpacing) - cubeSpacing / 2;
+        lastCorn.position.y =
+          y * (cubeSize + cubeSpacing) + cubeSize + cubeSpacing / 2;
+        scene.add(lastCorn);
+        corners.push(lastCorn);
+      }
+    }
+  }
+
+  isGeneratingMaze = true;
+}
+
+function generateMazeStep() {
+  // instead of doing a while loop,
+  // can I do this with steps? how would
+  // that look...
+  // I think I need about three or four functions that
+  // could get called:
+  // visitNode - that would have to clear a wall and set the
+  //             cube to a 'current' color (Blue)
+  //             I think we should have all the cube start as purple too.
+  //             Yellow for visited and for deleting a wall.
+  // backtrackNode - that would just change the previous node to yellow
+  //                 and set the new node to blue
+  // Okay maybe it's just two functions?
+
+  // Okay this dumb thing lost some of my notes.
+  // I think the last bit was to say that this function should be called
+  // generateMazeStep, and it needs logic to flip the switch for generating.
+  if (visitedNodeCount() == mazeNodes.length) {
+    // this means we're done generating the maze
+    isGeneratingMaze = false;
+  } else {
+    // figure out if it's visitNode or backtrackNode now:
+    // if currentNode has any unvisited neighbors
+    //   then do visitNode
+    // else
+    //   do backtrack
+    if (currentNode == null || currentNode.getUnvisitedNeighborCount() > 0) {
+      visitNode();
+    } else {
+      backtrackNode();
+    }
+  }
+}
+
+function visitNode() {
+  // randomly pick an unvisited neighbor from the currentNode
+  // push that neighbor onto the currentPath stack
+  // delete the wall between old current node and this new one
+  const oldCurrentNode = currentNode;
+  if (currentNode == null) {
+    currentNode = mazeNodes[0];
+  } else {
+    // pick random neighbor
+    currentNode = getRandomUnvisitedNeighbor();
+  }
+  currentNode.visited = true;
+  currentPath.push(currentNode);
+  deleteWall(oldCurrentNode);
+  setNodeVisitColor(oldCurrentNode);
+}
+
+function backtrackNode() {
+  // pop an element off the currentPath stack
+  // and set currentNode to the new 'last' item in the list
+  const oldCurrentNode = currentPath.pop();
+  currentNode = currentPath[currentPath.length - 1];
+  setNodeVisitColor(oldCurrentNode);
+}
+
+function getRandomUnvisitedNeighbor() {
+  /*
+    getRandomUnvisitedNeighbor = () => {
+    const unvisitedNeighbors = this.getUnvisitedNeighbors();
+    // okay this is kind of hard. the array could look something like
+    // [null, node1, node2, null]
+    // I need to be able to pick one of those, and know which one it is
+    // maybe something like this
+    const neighborIndexLookup = ["down", "up", "left", "right"];
+    // hm I need to think more about this.
+    // actually maybe this should be a function that is outside
+    // of the class. Maybe I just call the getUnvisitedNeighbors function
+    // from down below, and then do the logic to randomly pick one.
+    // Within that logic, we will know the direction, and based on the
+    // direction, we can calculate which wall to erase
+  };
+  */
+
+  const unvisitedNeighbors = currentNode.getUnvisitedNeighbors();
+  const neighborIndexLookup = ["down", "up", "left", "right"];
+  const unvisitedNeighborDirs = [];
+  let i = 0;
+  for (const neighbor of unvisitedNeighbors) {
+    if (neighbor != null) {
+      const unvisitedDirection = neighborIndexLookup[i];
+      console.log(
+        `node ${currentNode.index} has a neighber that is ${unvisitedDirection}`
+      );
+      unvisitedNeighborDirs.push(unvisitedDirection);
+    }
+    i++;
+  }
+  const min = 0;
+  const max = unvisitedNeighborDirs.length;
+  const randomIndex = Math.floor(Math.random() * (max - min) + min);
+  console.log(`randomIndex = ${randomIndex} (${min} - ${max})`);
+  const randomDir = unvisitedNeighborDirs[randomIndex];
+  i = 0;
+  for (const lookup of neighborIndexLookup) {
+    if (lookup == randomDir) {
+      return unvisitedNeighbors[i];
+    }
+    i++;
+  }
+}
+
+function visitedNodeCount() {
+  let nodeCount = 0;
+  for (const node of mazeNodes) {
+    if (node.visited === true) {
+      nodeCount++;
+    }
+  }
+  return nodeCount;
+}
+
+function deleteWall(oldCurrentNode) {
+  if (oldCurrentNode) {
+    let refNode = oldCurrentNode;
+    let tarNode = currentNode;
+    if (currentNode.index < oldCurrentNode.index) {
+      refNode = currentNode;
+      tarNode = oldCurrentNode;
+    }
+    let refNodeIndexes = refNode.getNeighborIndexes();
+    let walls = hWalls;
+
+    const bottom = refNodeIndexes[0];
+    const top = refNodeIndexes[1];
+    const left = refNodeIndexes[2];
+    const right = refNodeIndexes[3];
+    const index = tarNode.index;
+
+    let isV = false;
+
+    console.log(
+      `refNodeIndex: ${refNode.index}, tarNodeIndex: ${tarNode.index}, top: ${top}, right: ${right}, isV: ${isV}`
+    );
+
+    if (left == index || right == index) {
+      isV = true;
+      walls = vWalls;
+    }
+
+    // v walls (path moving horizontally)
+    // gSize = 2, ind = 0, wall = v, result = 1 (row is 0)
+    // gSize = 2, ind = 2, wall = v, result = 4 (row is 1)
+    // gSize = 3, ind = 3, wall = v, result = 5 (row is 1)
+    // gSize = 3, ind = 7, wall = v, result = 10 (row is 2)
+
+    // h walls (path moving vertically)
+    // gSize = 2, ind = 0, wall = h, result = 2
+    // gSize = 3, ind = 4, wall = h, result = 7
+    /*
+    2, 3
+    0, 1
+    
+    6, 7, 8
+    3, 4, 5
+    0, 1, 2
+    */
+
+    let wallIndex = 0;
+    if (isV) {
+      // one extra wall per row than the size
+      // figure out the row of the cube from the index?
+      // okay now i see, the pattern is:
+      // index + 1 + (the 'index' of the row we are on)
+      let theRow = Math.floor(index / gSize);
+      console.log(`theRow: ${theRow}`);
+      wallIndex = refNode.index + 1 + theRow;
+    } else {
+      // ooooh this one is actually really easy, it's just index + gSize
+      wallIndex = refNode.index + gSize;
+    }
+    console.log(`wallIndex: ${wallIndex}, gSize: ${gSize}`);
+
+    // just try to find *a* wall and mark it yellow
+    const myWall = walls[wallIndex];
+    myWall.material = material;
+  }
+}
+
+function setNodeVisitColor(oldCurrentNode) {
+  if (oldCurrentNode) {
+    const vCube = cubes[oldCurrentNode.index];
+    vCube.material = material;
+  }
+  const cube = cubes[currentNode.index];
+  cube.material = vMat;
+}
+
+function setUpCamera(gridSize) {
+  // okay so the maze is a square right now.
+  // so we need to figure out if the viewport
+  // is wider or taller, and then make sure there
+  // is extra space either in the x or y axis as
+  // appropriate.
+  // if aspect is = 1, then it's a square viewport
+  // if aspect is > 1, then it's wider than it is tall
+  // if aspect is < 1, then it's taller than it is wide
+  const size = cubeSize * gridSize + cubeSpacing * (gridSize - 1);
+  console.log(
+    `maze is ${gridSize} rows/cols, full size with walls will be ${size}`
+  );
+
+  const SCREEN_WIDTH = winWidth;
+  const SCREEN_HEIGHT = winHeight;
+  const aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+  const aspectInv = SCREEN_HEIGHT / SCREEN_WIDTH;
+
+  // okay so if it's wider than it is tall, we need move the left/right planes relative to the aspect
+  // and if it's taller than it is wide, we need to move the top/bottom planes relative to the aspect
+  // but if it's taller than it is wide, then the aspect will be < 1. in that case should i get an inverse aspect, height/width? yes.
+
+  const widthAdjust = aspect > 1 ? aspect : 1;
+  const heightAdjust = aspect < 1 ? aspectInv : 1;
+
+  camera.position.z = 100;
+  camera.position.x = 0;
+  camera.position.y = 0;
+  camera.left = size * -0.1 * widthAdjust;
+  camera.right = size * 1.1 * widthAdjust;
+  camera.top = size * 1.1 * heightAdjust;
+  camera.bottom = size * -0.1 * heightAdjust;
+  camera.zoom = 1;
+  camera.lookAt(0, 0, 0);
+  camera.updateProjectionMatrix();
+}
+
+function growMaze() {
+  if (gSize < maxGSize) {
+    gSize++;
+    drawGrid(gSize);
+  }
+}
+
+function shrinkMaze() {
+  if (gSize > minGSize) {
+    gSize--;
+    drawGrid(gSize);
+  }
+}
+
+function animate() {
+  moveOrtho();
+  if (autoGen) {
+    generateMazeStep();
+  }
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+
+function moveOrtho() {
+  camera.position.x += moveX;
+  camera.position.y += moveY;
+  camera.zoom += zoomAmount;
+  camera.updateProjectionMatrix();
+}
+
+function keyDown(e) {
+  //console.log(`keyDown: ${e.key}`);
+  const key = e.key;
+  if (key == "s") {
+    moveY = -0.01;
+  } else if (key == "w") {
+    moveY = 0.01;
+  } else if (key == "d") {
+    moveX = 0.01;
+  } else if (key == "a") {
+    moveX = -0.01;
+  } else if (key == "ArrowUp") {
+    zoomAmount = 0.01;
+  } else if (key == "ArrowDown") {
+    zoomAmount = -0.01;
+  }
+}
+
+function keyUp(e) {
+  const key = e.key;
+  console.log(`keyUp: ${key}`);
+  if (key == "w" || key == "s") {
+    moveY = 0;
+  } else if (key == "d" || key == "a") {
+    moveX = 0;
+  } else if (key == "ArrowUp" || key == "ArrowDown") {
+    zoomAmount = 0;
+  } else if (key == "+") {
+    growMaze();
+  } else if (key == "-") {
+    shrinkMaze();
+  } else if (key == "Backspace") {
+    clearMaze();
+  } else if (key == "Enter") {
+    autoGen = false;
+    generateMazeStep();
+  } else if (key == "h") {
+    iterateHs();
+  }
+}
+
+function resizeWindow(e) {
+  //addEventListener("resize", (event) => {});
+  setUpCamera(gSize);
+}
+
+let hIndex = 0;
+function iterateHs() {
+  hWalls[hIndex++].material = material;
+}
+
+window.addEventListener("keydown", keyDown, true);
+window.addEventListener("keyup", keyUp, true);
+window.addEventListener("resize", resizeWindow);
+
+setUpCamera(gSize);
+drawGrid(gSize);
+
+// Start the animation
+animate();
+
+    
     </script>
 </body>
 </html>
