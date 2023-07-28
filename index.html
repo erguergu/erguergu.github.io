@@ -14,5 +14,21 @@
 <body id="threejs">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
     <script src="maze.js"></script>
+
+    <div id="menu" class="button" onclick="menuToggle()">Menu</div>
+<div id="menuDropdown">
+  <div>Size</div>
+  <div class="center">
+    <span class="button" onclick="menuSizeDec()">&nbsp;&lt;&nbsp;</span>
+    <input id="sizeInput" type="number" />
+    <span class="button" onclick="menuSizeInc()">&nbsp;&gt;&nbsp;</span>
+  </div>
+  <div>Seed</div>
+  <div class="center">
+    <input id="seedInput" type="text" />
+  </div>
+  <div class="button center" onclick="menuRandomSeed()">Random Seed</div>
+  <div class="button center" onclick="menuGenerateMaze()">Generate Maze</div>
+</div>
 </body>
 </html>
