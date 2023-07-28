@@ -8,7 +8,9 @@ const winHeight =
   document.body.clientHeight;
 
 console.log(`width: ${winWidth}, height: ${winHeight}`);
-let seedPrefix = "apples";
+let seedPrefix = "applesauce";
+
+let menuVisible = false;
 
 class MazeNode {
   constructor(index, allNodes, mazeSize) {
@@ -556,6 +558,9 @@ function moveOrtho() {
 }
 
 function keyDown(e) {
+  if (menuVisible) {
+    return;
+  }
   //console.log(`keyDown: ${e.key}`);
   const key = e.key;
   if (key == "s") {
@@ -574,6 +579,9 @@ function keyDown(e) {
 }
 
 function keyUp(e) {
+  if (menuVisible) {
+    return;
+  }
   const key = e.key;
   //console.log(`keyUp: ${key}`);
   if (key == "w" || key == "s") {
@@ -603,6 +611,54 @@ function resizeWindow(e) {
 
 function newSeed() {
   seedPrefix = `${Date.now()}`;
+  seedPrefix = getRandomIndex(100000,999999);
+  drawGrid(gSize);
+}
+
+function menuToggle() {
+  const menuDropdown = document.getElementById("menuDropdown");
+  if (menuDropdown.style.display == "block") {
+    menuVisible = false;
+    menuDropdown.style.display = "none";
+  } else {
+    menuVisible = true;
+    menuDropdown.style.display = "block";
+    const sizeInput = document.getElementById('sizeInput');
+    const seedInput = document.getElementById('seedInput');
+    sizeInput.value = `${gSize}`;
+    seedInput.value = `${seedPrefix}`;
+  }
+}
+
+function menuSizeInc() {
+  const sizeInput = document.getElementById('sizeInput');
+  const newSize = parseInt(sizeInput.value) + 1;
+  sizeInput.value = `${newSize}`;
+  menuGenerateMaze();
+}
+
+function menuSizeDec() {
+  const sizeInput = document.getElementById('sizeInput');
+  const newSize = parseInt(sizeInput.value) - 1;
+  sizeInput.value = `${newSize}`;
+  menuGenerateMaze();
+}
+
+function menuRandomSeed() {
+  //getRandomIndex(min, max, unvisitedNeighbors, neighborIndexLookup)
+  const seedInput = document.getElementById('seedInput');
+  
+  seedPrefix = `${Date.now()}`;
+  const newSeed = getRandomIndex(100000,999999);
+  seedInput.value = newSeed;
+  menuGenerateMaze();
+}
+
+function menuGenerateMaze() {
+  const sizeInput = document.getElementById('sizeInput');
+  const seedInput = document.getElementById('seedInput');
+  gSize = parseInt(sizeInput.value);
+  seedPrefix = seedInput.value;
   drawGrid(gSize);
 }
 
