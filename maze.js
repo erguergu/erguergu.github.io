@@ -91,9 +91,13 @@ class MazeNode {
 
 // Create a scene
 const scene = new THREE.Scene();
-var camera = new THREE.OrthographicCamera(1, 1, 1, 1, 0, 1000);
+const pCamera = new THREE.PerspectiveCamera();
+pCamera.up = new THREE.Vector3(0,0,1);
+const oCamera = new THREE.OrthographicCamera(1, 1, 1, 1, 0, 1000);
+let camera = oCamera;
 
-scene.add(camera);
+scene.add(pCamera);
+scene.add(oCamera);
 
 let moveX = 0;
 let moveY = 0;
@@ -108,7 +112,7 @@ scene.add(directionalLight);
 scene.add(directionalLight.target);
 
 // Create an ambient light
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.3); // Brighter ambient light
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Brighter ambient light
 scene.add(ambientLight);
 
 const size = 2;
@@ -119,7 +123,7 @@ const divisions = 20;
 //scene.add(gridHelper);
 
 // Create a renderer
-const renderer = new THREE.WebGLRenderer();
+const renderer = new THREE.WebGLRenderer({antialias: true});
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -247,31 +251,10 @@ function drawGrid(gridSize) {
 }
 
 function generateMazeStep() {
-  // instead of doing a while loop,
-  // can I do this with steps? how would
-  // that look...
-  // I think I need about three or four functions that
-  // could get called:
-  // visitNode - that would have to clear a wall and set the
-  //             cube to a 'current' color (Blue)
-  //             I think we should have all the cube start as purple too.
-  //             Yellow for visited and for deleting a wall.
-  // backtrackNode - that would just change the previous node to yellow
-  //                 and set the new node to blue
-  // Okay maybe it's just two functions?
-
-  // Okay this dumb thing lost some of my notes.
-  // I think the last bit was to say that this function should be called
-  // generateMazeStep, and it needs logic to flip the switch for generating.
   if (visitedNodeCount() == mazeNodes.length) {
     // this means we're done generating the maze
     isGeneratingMaze = false;
   } else {
-    // figure out if it's visitNode or backtrackNode now:
-    // if currentNode has any unvisited neighbors
-    //   then do visitNode
-    // else
-    //   do backtrack
     if (currentNode == null || currentNode.getUnvisitedNeighborCount() > 0) {
       visitNode();
     } else {
@@ -310,22 +293,6 @@ function backtrackNode() {
 }
 
 function getRandomUnvisitedNeighbor() {
-  /*
-    getRandomUnvisitedNeighbor = () => {
-    const unvisitedNeighbors = this.getUnvisitedNeighbors();
-    // okay this is kind of hard. the array could look something like
-    // [null, node1, node2, null]
-    // I need to be able to pick one of those, and know which one it is
-    // maybe something like this
-    const neighborIndexLookup = ["down", "up", "left", "right"];
-    // hm I need to think more about this.
-    // actually maybe this should be a function that is outside
-    // of the class. Maybe I just call the getUnvisitedNeighbors function
-    // from down below, and then do the logic to randomly pick one.
-    // Within that logic, we will know the direction, and based on the
-    // direction, we can calculate which wall to erase
-  };
-  */
 
   const unvisitedNeighbors = currentNode.getUnvisitedNeighbors();
   const neighborIndexLookup = ["down", "up", "left", "right"];
@@ -486,6 +453,7 @@ function deleteWall(oldCurrentNode) {
     // just try to find *a* wall and mark it yellow
     const myWall = walls[wallIndex];
     myWall.material = material;
+    myWall.position.z = -cubeSize;
   }
 }
 
@@ -496,6 +464,8 @@ function setNodeVisitColor(oldCurrentNode) {
   }
   const cube = cubes[currentNode.index];
   cube.material = vMat;
+  
+  cube.position.z = -cubeSize;
 }
 
 function setUpCamera(gridSize) {
@@ -514,17 +484,24 @@ function setUpCamera(gridSize) {
   const widthAdjust = (totalWidth - size) / 2;
   const heightAdjust = (totalHeight - size) / 2;
 
-  camera.position.z = 100;
-  camera.position.x = 0;
-  camera.position.y = 0;
-  camera.left = 0 - widthAdjust;
-  camera.right = size + widthAdjust;
-  camera.top = size + heightAdjust;
-  camera.bottom = 0 - heightAdjust;
-  camera.zoom = 1;
-  camera.lookAt(0, 0, 0);
+  oCamera.position.z = 100;
+  oCamera.position.x = 0;
+  oCamera.position.y = 0;
+  oCamera.left = 0 - widthAdjust;
+  oCamera.right = size + widthAdjust;
+  oCamera.top = size + heightAdjust;
+  oCamera.bottom = 0 - heightAdjust;
+  oCamera.zoom = 1;
+  oCamera.lookAt(0, 0, 0);
 
-  camera.updateProjectionMatrix();
+  oCamera.updateProjectionMatrix();
+  
+  pCamera.position.x = cubeSize/2;
+  pCamera.position.y = cubeSize/2;
+  pCamera.position.z = 0;
+  pCamera.lookAt(size/2, size/2, pCamera.position.z);
+  //pCamera.rotateZ(-Math.PI/2);
+  oCamera.updateProjectionMatrix();
 }
 
 function growMaze() {
@@ -543,18 +520,26 @@ function shrinkMaze() {
 
 function animate() {
   moveOrtho();
+  movePerspective();
   if (autoGen) {
     generateMazeStep();
   }
+  
+  //pCamera.rotateZ(.01);
   requestAnimationFrame(animate);
   renderer.render(scene, camera);
 }
 
 function moveOrtho() {
-  camera.position.x += moveX;
-  camera.position.y += moveY;
-  camera.zoom += zoomAmount;
-  camera.updateProjectionMatrix();
+  oCamera.position.x += moveX;
+  oCamera.position.y += moveY;
+  oCamera.zoom += zoomAmount;
+  oCamera.updateProjectionMatrix();
+}
+
+function movePerspective() {
+  pCamera.translateZ(-moveY);
+  pCamera.rotateY(-moveX*3);
 }
 
 function keyDown(e) {
@@ -601,17 +586,22 @@ function keyUp(e) {
     generateMazeStep();
   } else if (key == "n") {
     newSeed();
+  } else if ((key == "c")) {
+    switchCamera();
   }
 }
 
+function switchCamera() {
+  camera = camera.isPerspectiveCamera ? oCamera : pCamera;
+}
+
 function resizeWindow(e) {
-  //addEventListener("resize", (event) => {});
   setUpCamera(gSize);
 }
 
 function newSeed() {
   seedPrefix = `${Date.now()}`;
-  seedPrefix = getRandomIndex(100000,999999);
+  seedPrefix = getRandomIndex(100000, 999999);
   drawGrid(gSize);
 }
 
@@ -623,22 +613,22 @@ function menuToggle() {
   } else {
     menuVisible = true;
     menuDropdown.style.display = "block";
-    const sizeInput = document.getElementById('sizeInput');
-    const seedInput = document.getElementById('seedInput');
+    const sizeInput = document.getElementById("sizeInput");
+    const seedInput = document.getElementById("seedInput");
     sizeInput.value = `${gSize}`;
     seedInput.value = `${seedPrefix}`;
   }
 }
 
 function menuSizeInc() {
-  const sizeInput = document.getElementById('sizeInput');
+  const sizeInput = document.getElementById("sizeInput");
   const newSize = parseInt(sizeInput.value) + 1;
   sizeInput.value = `${newSize}`;
   menuGenerateMaze();
 }
 
 function menuSizeDec() {
-  const sizeInput = document.getElementById('sizeInput');
+  const sizeInput = document.getElementById("sizeInput");
   const newSize = parseInt(sizeInput.value) - 1;
   sizeInput.value = `${newSize}`;
   menuGenerateMaze();
@@ -646,17 +636,17 @@ function menuSizeDec() {
 
 function menuRandomSeed() {
   //getRandomIndex(min, max, unvisitedNeighbors, neighborIndexLookup)
-  const seedInput = document.getElementById('seedInput');
-  
+  const seedInput = document.getElementById("seedInput");
+
   seedPrefix = `${Date.now()}`;
-  const newSeed = getRandomIndex(100000,999999);
+  const newSeed = getRandomIndex(100000, 999999);
   seedInput.value = newSeed;
   menuGenerateMaze();
 }
 
 function menuGenerateMaze() {
-  const sizeInput = document.getElementById('sizeInput');
-  const seedInput = document.getElementById('seedInput');
+  const sizeInput = document.getElementById("sizeInput");
+  const seedInput = document.getElementById("seedInput");
   gSize = parseInt(sizeInput.value);
   seedPrefix = seedInput.value;
   drawGrid(gSize);
