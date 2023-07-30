@@ -13,12 +13,16 @@ let seedPrefix = "applesauce";
 let menuVisible = false;
 
 class MazeNode {
-  constructor(index, allNodes, mazeSize) {
+  constructor(x, y, index, allNodes, mazeSize) {
+    this.x = x;
+    this.y = y;
     this.visited = false;
     this.connectedNeighbors = [];
     this.index = index;
     this.allNodes = allNodes;
     this.mazeSize = mazeSize;
+    this.rightBarrier = false;
+    this.topBarrier = false;
   }
 
   getNeighborIndexes = () => {
@@ -42,12 +46,12 @@ class MazeNode {
     }
 
     // left
-    if (this.index % mazeSize != 0) {
+    if (this.index % mazeSize != 0 && !this.allNodes[this.index - 1].rightBarrier) {
       left = this.index - 1;
     }
 
     // right
-    if ((this.index + 1) % mazeSize != 0) {
+    if ((this.index + 1) % mazeSize != 0 && !this.rightBarrier) {
       right = this.index + 1;
     }
 
@@ -92,7 +96,7 @@ class MazeNode {
 // Create a scene
 const scene = new THREE.Scene();
 const pCamera = new THREE.PerspectiveCamera();
-pCamera.up = new THREE.Vector3(0,0,1);
+pCamera.up = new THREE.Vector3(0, 0, 1);
 const oCamera = new THREE.OrthographicCamera(1, 1, 1, 1, 0, 1000);
 let camera = oCamera;
 
@@ -123,7 +127,7 @@ const divisions = 20;
 //scene.add(gridHelper);
 
 // Create a renderer
-const renderer = new THREE.WebGLRenderer({antialias: true});
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -173,6 +177,7 @@ const hGeo = new THREE.BoxGeometry(cubeSize, cubeSpacing, cubeSize);
 const wallMat = new THREE.MeshLambertMaterial({ color: 0x9900ff });
 const vGeo = new THREE.BoxGeometry(cubeSpacing, cubeSize, cubeSize);
 const vMat = new THREE.MeshLambertMaterial({ color: 0x0099ff });
+const barMat = new THREE.MeshLambertMaterial({ color: 0xff0000 });
 
 const cornGeo = new THREE.BoxGeometry(cubeSpacing, cubeSpacing, cubeSize);
 
@@ -205,7 +210,7 @@ function drawGrid(gridSize) {
 
       scene.add(cube);
       cubes.push(cube);
-      mazeNodes.push(new MazeNode(index++, mazeNodes, gridSize));
+      mazeNodes.push(new MazeNode(x, y, index++, mazeNodes, gridSize));
 
       const hWall = new THREE.Mesh(hGeo, wallMat);
       hWall.position.x = x * (cubeSize + cubeSpacing) + cubeSize / 2;
@@ -246,6 +251,8 @@ function drawGrid(gridSize) {
       }
     }
   }
+
+  defineBarriers();
 
   isGeneratingMaze = true;
 }
@@ -293,7 +300,7 @@ function backtrackNode() {
 }
 
 function getRandomUnvisitedNeighbor() {
-
+  
   const unvisitedNeighbors = currentNode.getUnvisitedNeighbors();
   const neighborIndexLookup = ["down", "up", "left", "right"];
   const unvisitedNeighborDirs = [];
@@ -307,6 +314,9 @@ function getRandomUnvisitedNeighbor() {
   }
   const min = 0;
   const max = unvisitedNeighborDirs.length;
+  if (currentNode.x == 6 && currentNode.y == 9) {
+    console.log(`itsa me! min:${min},max:${max}`);
+  }
   const randomIndex = getRandomIndex(
     min,
     max,
@@ -324,7 +334,8 @@ function getRandomUnvisitedNeighbor() {
 }
 
 function getRandomIndex(min, max, unvisitedNeighbors, neighborIndexLookup) {
-  var seed = cyrb128(`${seedPrefix}${currentNode.index}`);
+  return getSeededRandom(min, max, `${currentNode.index}`);
+  //var seed = cyrb128(`${seedPrefix}${currentNode.index}`);
   // Four 32-bit component hashes provide the seed for sfc32.
   //var rand = sfc32(seed[0], seed[1], seed[2], seed[3]);
 
@@ -332,11 +343,47 @@ function getRandomIndex(min, max, unvisitedNeighbors, neighborIndexLookup) {
   //var rand = mulberry32(seed[0]);
 
   // Obtain sequential random numbers like so:
-  var seededRandomNumber = mulberry32(seed[0])();
-  var vanillaRandom = Math.random();
+  //var seededRandomNumber = mulberry32(seed[0])();
+  //var vanillaRandom = Math.random();
 
   // totally random
+  //return Math.floor(seededRandomNumber * (max - min) + min);
+}
+
+function getSeededRandom(min, max, seedPostfix) {
+  const seed = cyrb128(`${seedPrefix}${seedPostfix}`);
+  const seededRandomNumber = mulberry32(seed[0])();
   return Math.floor(seededRandomNumber * (max - min) + min);
+}
+
+function defineBarriers() {
+  // the mazes are way too easy with the regular depth-first alg.
+  // i think we can make a maze harder by adding vertial or
+  // horizontal barriers that go most of the way through the maze.
+  // it should only try to put a barrier in somewhere near the middle
+  // of every 8 cells.
+  // The barrier needs to have at least one gap.
+  const numBarriers = Math.floor(gSize / 8);
+  console.log(`Num barriers: ${numBarriers}`);
+  for (let i = 0; i < numBarriers; i++) {
+    let barLoc = Math.floor((gSize / (numBarriers + 1)) * (i + 1));
+    let gap = getSeededRandom(0, gSize);
+    console.log(`I will draw a barrier at ${barLoc} except at row ${gap}`);
+    // okay now go up a column and mark its nodes as barriers
+    for (let y = 0; y < gSize; y++) {
+      for (let x = 0; x < gSize; x++) {
+        // 6 7 8
+        // 3 4 5
+        // 0 1 2
+        // x:1,y:1,ind:4,gSize:3
+        
+        const ind = y * gSize + x;
+        if (x == barLoc && gap != y) {
+          mazeNodes[ind].rightBarrier = true;
+        }
+      }
+    }
+  }
 }
 
 function cyrb128(str) {
@@ -463,8 +510,8 @@ function setNodeVisitColor(oldCurrentNode) {
     vCube.material = material;
   }
   const cube = cubes[currentNode.index];
-  cube.material = vMat;
-  
+  cube.material = currentNode.rightBarrier ? barMat : vMat;
+
   cube.position.z = -cubeSize;
 }
 
@@ -495,11 +542,11 @@ function setUpCamera(gridSize) {
   oCamera.lookAt(0, 0, 0);
 
   oCamera.updateProjectionMatrix();
-  
-  pCamera.position.x = cubeSize/2;
-  pCamera.position.y = cubeSize/2;
+
+  pCamera.position.x = cubeSize / 2;
+  pCamera.position.y = cubeSize / 2;
   pCamera.position.z = 0;
-  pCamera.lookAt(size/2, size/2, pCamera.position.z);
+  pCamera.lookAt(size / 2, size / 2, pCamera.position.z);
   //pCamera.rotateZ(-Math.PI/2);
   oCamera.updateProjectionMatrix();
 }
@@ -524,7 +571,7 @@ function animate() {
   if (autoGen) {
     generateMazeStep();
   }
-  
+
   //pCamera.rotateZ(.01);
   requestAnimationFrame(animate);
   renderer.render(scene, camera);
@@ -539,7 +586,7 @@ function moveOrtho() {
 
 function movePerspective() {
   pCamera.translateZ(-moveY);
-  pCamera.rotateY(-moveX*3);
+  pCamera.rotateY(-moveX * 3);
 }
 
 function keyDown(e) {
@@ -586,7 +633,7 @@ function keyUp(e) {
     generateMazeStep();
   } else if (key == "n") {
     newSeed();
-  } else if ((key == "c")) {
+  } else if (key == "c") {
     switchCamera();
   }
 }
