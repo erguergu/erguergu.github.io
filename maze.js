@@ -46,7 +46,10 @@ class MazeNode {
     }
 
     // left
-    if (this.index % mazeSize != 0 && !this.allNodes[this.index - 1].rightBarrier) {
+    if (
+      this.index % mazeSize != 0 &&
+      !this.allNodes[this.index - 1].rightBarrier
+    ) {
       left = this.index - 1;
     }
 
@@ -138,9 +141,12 @@ let corners = [];
 
 let mazeNodes = [];
 let currentPath = [];
+let unvisPath = [];
+let originalPath = [];
 let autoGen = true;
 let isGeneratingMaze = false;
 let currentNode = null;
+let targetNode = null;
 
 function clearMaze() {
   console.log(`Will clear the maze... There are ${cubes.length} cubes...`);
@@ -162,6 +168,8 @@ function clearMaze() {
   corners = [];
   mazeNodes = [];
   currentPath = [];
+  originalPath = [];
+  unvisPath = [];
   isGeneratingMaze = false;
   currentNode = null;
 }
@@ -252,9 +260,80 @@ function drawGrid(gridSize) {
     }
   }
 
-  defineBarriers();
+  targetNode = mazeNodes[gridSize - 1];
+
+  //defineBarriers();
 
   isGeneratingMaze = true;
+}
+
+function stepDepthFirst() {
+  if (currentNode == null || currentNode.getUnvisitedNeighborCount() > 0) {
+    visitRandomNode();
+  } else {
+    backtrackNode();
+  }
+}
+
+function stepAlternatePaths() {
+  // Okay I think it's kind of simple actually.
+  // 1. Get list of nodes, in order of current path, that have
+  //    unvisited nodes adjacent to them.
+  // 2. Randomly pick an early node in that list
+  // 3. Do depth-first search to fill out all contiguous
+  //    unvisited nodes.
+  // 4. Repeat step 1 until there are no more unvisited.
+
+  // Create copy of currentPath in originalPath
+  if (originalPath.length == 0) {
+    for (const pathNode of currentPath) {
+      originalPath.push(pathNode);
+    }
+
+    // clear currentPath so we can begin depth-first again
+    currentPath = [];
+  }
+  
+  const cPathUnvisN = currentPathHasUnvisNeighbors();
+  console.log(`cPathUnvisN: ${cPathUnvisN}, cPath.len:${currentPath.length}`);
+  
+  
+  if (unvisPath.length == 0 || !cPathUnvisN) {
+    unvisPath = getOrigPathNodesWithUnvisNeighbors();
+    // from here, pick a node at random to visit, make that
+    // the first node in the new path
+    const max = Math.ceil(unvisPath.length * 0.4);
+    const randInd = getRandomIndex(0, max);
+    console.log(`currentNode:${currentNode.index}, Setting currentNode to ${unvisPath[randInd].index}, unvis:${unvisPath.length}`);
+    clearActiveColor(currentNode);
+    currentNode = unvisPath[randInd];
+    currentPath = [];
+  }
+
+  // now pick a node at random to visit
+  if (cPathUnvisN || currentPath.length == 0) {
+    console.log(`currr`);
+    stepDepthFirst();
+  }
+}
+
+function currentPathHasUnvisNeighbors() {
+  for (const node of currentPath) {
+    if (node.getUnvisitedNeighborCount() > 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function getOrigPathNodesWithUnvisNeighbors() {
+  const unvis = [];
+  for (const pathNode of originalPath) {
+    if (pathNode.getUnvisitedNeighborCount() > 0) {
+      unvis.push(pathNode);
+    }
+  }
+  return unvis;
 }
 
 function generateMazeStep() {
@@ -262,15 +341,15 @@ function generateMazeStep() {
     // this means we're done generating the maze
     isGeneratingMaze = false;
   } else {
-    if (currentNode == null || currentNode.getUnvisitedNeighborCount() > 0) {
-      visitNode();
+    if (!targetNode.visited) {
+      stepDepthFirst();
     } else {
-      backtrackNode();
+      stepAlternatePaths();
     }
   }
 }
 
-function visitNode() {
+function visitRandomNode() {
   // randomly pick an unvisited neighbor from the currentNode
   // push that neighbor onto the currentPath stack
   // delete the wall between old current node and this new one
@@ -285,6 +364,11 @@ function visitNode() {
     // pick random neighbor
     currentNode = getRandomUnvisitedNeighbor();
   }
+
+  visitNode(currentNode, oldCurrentNode);
+}
+
+function visitNode(currentNode, oldCurrentNode) {
   currentNode.visited = true;
   currentPath.push(currentNode);
   deleteWall(oldCurrentNode);
@@ -300,7 +384,6 @@ function backtrackNode() {
 }
 
 function getRandomUnvisitedNeighbor() {
-  
   const unvisitedNeighbors = currentNode.getUnvisitedNeighbors();
   const neighborIndexLookup = ["down", "up", "left", "right"];
   const unvisitedNeighborDirs = [];
@@ -376,7 +459,7 @@ function defineBarriers() {
         // 3 4 5
         // 0 1 2
         // x:1,y:1,ind:4,gSize:3
-        
+
         const ind = y * gSize + x;
         if (x == barLoc && gap != y) {
           mazeNodes[ind].rightBarrier = true;
@@ -502,6 +585,11 @@ function deleteWall(oldCurrentNode) {
     myWall.material = material;
     myWall.position.z = -cubeSize;
   }
+}
+
+function clearActiveColor(currentNode) {
+  const cube = cubes[currentNode.index];
+  cube.material = material;
 }
 
 function setNodeVisitColor(oldCurrentNode) {
