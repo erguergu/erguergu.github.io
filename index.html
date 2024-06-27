@@ -1,0 +1,559 @@
+<html>
+<head>
+<script>
+
+// events is the list we build manually now.
+const events = [
+
+// Leave
+[2024,6,3,'L','302 Leave'],
+[2024,7,5,'L','4th of July Leave'],
+
+// Bad
+[2024,5,7,'B',"Let's Get Aligned"],
+[2024,5,8,'B',"Let's Get Aligned"],
+[2024,5,9,'B',"Let's Get Aligned"],
+
+// U
+[2024,3,9,'U','299'],
+[2024,4,13,'U','300'],
+[2024,5,4,'U','301'],
+[2024,6,1,'U','302'],
+[2024,6,29,'U','303'],
+[2024,7,27,'U','304'],
+[2024,8,17,'U','305'],
+[2024,10,26,'U','308'],
+
+
+// Holidays
+[2024,1,1,'H','New Years'],
+[2024,1,15,'H','MLK'],
+[2024,2,19,'H','Presidents'],
+[2024,5,27,'H','Memorial Day'],
+[2024,6,19,'H','Juneteenth'],
+[2024,7,4,'H','Independence Day'],
+[2024,9,2,'H','Labor Day'],
+[2024,10,14,'H','Columbus Day'],
+[2024,11,11,'H','Veterans Day'],
+[2024,11,28,'H','Thanksgiving'],
+[2024,12,25,'H','Christmas'],
+
+
+// Timecard End
+[2024,1,12,'T',''],
+
+// Payday
+[2024,1,6,'P',''],
+
+// Old Leave
+[2024,1,8,'L','LiF Leave'],
+[2024,1,9,'L','LiF Leave'],
+[2024,1,10,'L','LiF Leave'],
+[2024,1,11,'L','LiF Leave'],
+[2024,1,12,'L','LiF Leave'],
+[2024,1,16,'L','LiF Leave'],
+[2024,1,17,'L','LiF Leave'],
+[2024,1,18,'L','LiF Leave'],
+[2024,1,19,'L','LiF Leave'],
+
+[2024,3,11,'L','299 Leave'],
+[2024,4,15,'L','300 Leave'],
+
+];
+
+const todayDate = new Date();
+events.unshift([todayDate.getFullYear(),todayDate.getMonth()+1,todayDate.getDate(),'D','Today']);
+
+</script>
+<style>
+
+body {
+  font-family: sans-serif;
+}
+
+.flex-grid .item {
+  flex: 1;
+  min-height: 1px;
+}
+
+.item-desc {
+  padding: 5px;
+}
+
+.flex-grid .month {
+  margin: 2px;
+  background: #f5f5f5;
+  min-width: 441px;
+  max-width: 432px;
+}
+
+.flex-grid .month.current {
+  background-color: white;
+}
+
+h3.monthName {
+  text-align: center;
+  margin-top: .25em;
+  margin-bottom: .25em;
+}
+
+.week-odd {
+  border-top: 2px dashed slateblue;
+}
+
+.week-even {
+  border-top: 1px dotted grey;
+}
+
+.flex-grid .day {
+  position: relative;
+  min-width: 60px;
+  max-width: 60px;
+  height: 60px;
+}
+
+.month .day {
+  background-color: whitesmoke;
+}
+
+.month .day.real {
+  background-color: #ededed;
+}
+
+.month.current .day {
+  background-color: white;
+}
+
+.month.current .day.real {
+  background-color: whitesmoke;
+}
+
+.day.real > div {
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
+
+.day.real > div:hover {
+  border-color: grey;
+}
+
+.day.event {
+  cursor: pointer;
+}
+
+.flex-grid .day div {
+  text-align: center;
+  min-width: 60px;
+  max-width: 60px;
+  height: 60px;    
+  line-height: 60px;
+  position: absolute;
+  z-index: 11;
+}
+
+.flex-grid .day canvas {
+  position: absolute;
+  z-index: 10;
+  height: 100%;
+  width: 100%;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+  -ms-flex-direction: column;
+  -webkit-flex-direction: column;
+}
+
+.flex-row {
+  display: flex;
+  flex-direction: row;
+  -ms-flex-direction: row;
+  -webkit-flex-direction: row;
+
+  flex-wrap: wrap;
+}
+
+#modal {
+  position: fixed;
+  z-index: 1000;
+  background-color: white;
+  border: 1px solid black;
+  min-height: 100px;
+  width: 300px;
+  padding-left: 10px;
+  padding-right: 10px;
+  border-radius: 5px;
+  box-shadow: 3px 3px 5px grey;
+}
+
+</style>
+</head>
+<body id="body">
+
+    <div class="flex-grid">
+      <div class="flex-col">
+        <div class="flex-row" id="month_container"></div>
+      </div>
+    </div>
+
+</body>
+<script>
+// calEvents will be built dynamically later
+const calEvents = [];
+
+function canvasDraw(canvas) {
+
+  const ctx = canvas.getContext("2d");
+  ctx.globalAlpha = 0.85;
+
+  //c.drawCircle("blue", 30, 30, 25, 0, Math.PI * 2, 5);
+  this.drawCircle = function(color, x, y, radius, from, to, lineWidth) {
+    
+    ctx.beginPath();
+    ctx.lineWidth = lineWidth;
+    ctx.strokeStyle = color;
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  
+  this.drawPolygon = function(color, Xcenter, Ycenter, size, numberOfSides, lineWidth) {
+
+    ctx.beginPath();
+    ctx.moveTo (Xcenter +  size * Math.cos(0), Ycenter +  size *  Math.sin(0));          
+
+    for (var i = 1; i <= numberOfSides; i += 1) {
+        ctx.lineTo (Xcenter + size * Math.cos(i * 2 * Math.PI / numberOfSides), Ycenter + size * Math.sin(i * 2 * Math.PI / numberOfSides));
+    }
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
+  }
+
+  this.drawFilledPolygon = function(color, fillColor, Xcenter, Ycenter, size, numberOfSides, lineWidth) {
+
+    ctx.beginPath();
+    ctx.moveTo (Xcenter +  size * Math.cos(0), Ycenter +  size *  Math.sin(0));          
+
+    for (var i = 1; i <= numberOfSides; i += 1) {
+        ctx.lineTo (Xcenter + size * Math.cos(i * 2 * Math.PI / numberOfSides), Ycenter + size * Math.sin(i * 2 * Math.PI / numberOfSides));
+    }
+
+    ctx.closePath();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = fillColor;
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
+    ctx.fill();
+  }
+}
+
+const caldata = [
+  { "month": "January" },
+  { "month": "February" },
+  { "month": "March" },
+  { "month": "April" },
+  { "month": "May" },
+  { "month": "June" },
+  { "month": "July" },
+  { "month": "August" },
+  { "month": "September" },
+  { "month": "October" },
+  { "month": "November" },
+  { "month": "December" }
+];
+const monthContainer = document.getElementById("month_container");
+let monthElementId = "";
+let calHtml = '';
+const today = new Date();
+let weekNum = 1;
+
+for (const month of caldata) {
+
+  const currentDay = new Date(`${month.month} 1, 2024`);
+  const monthNum = currentDay.getMonth();
+  let dayNum = currentDay.getDay();
+
+  const thisMonthClass = today.getMonth() == monthNum ? ' current' : '';
+  calHtml += "<div class='item month" + thisMonthClass + "' id='m" + month.month + "'><div class='item-desc'><h3 class='monthName'>" + month.month + "</h3><div class='flex-row'>";
+  let monthStarted = false;
+  let monthCompleted = false;
+
+  while (!monthCompleted) {
+  
+    for (let weekDay = 0; weekDay < 7; weekDay++ ) {
+    
+      if (weekDay == currentDay.getDay()) {
+        // we found the first day of the month
+        monthStarted = true;
+      }
+
+      let idString = "";
+      let realDayString = "";
+      if (monthStarted && !monthCompleted) {
+        const monthNum = currentDay.getMonth() + 1;
+        idString = "id='d" + currentDay.getFullYear() + "-" + monthNum + "-" + currentDay.getDate() + "'";
+        realDayString = " real";
+      }
+      
+      const weekNumStr = ` week-${weekNum} week-${weekNum % 2 == 0 ? 'even' : 'odd'}`;
+      calHtml += "<div class='item day" + realDayString + weekNumStr + "'" + idString + " >";
+      if (monthStarted) {
+      
+        if (!monthCompleted) {
+          calHtml += "<div>" + currentDay.getDate() + "</div>";
+          if (today.getDate() == currentDay.getDate() && today.getMonth() == currentDay.getMonth()) {
+            monthElementId = "m" + month.month;
+          }
+        }
+      
+        currentDay.setDate(currentDay.getDate() + 1);
+        if (currentDay.getDay() == 0 && monthStarted && !monthCompleted) {
+          weekNum++;
+        }
+      
+        if (monthNum != currentDay.getMonth()) {
+          monthCompleted = true;
+          monthStarted = false;
+        }
+      }
+      calHtml += "</div>";
+    
+    }
+  
+  }
+  calHtml += "</div></div></div>";
+}
+monthContainer.innerHTML = calHtml;
+let currMonthEl = document.getElementById(monthElementId);
+setTimeout(function() {
+currMonthEl.scrollIntoView();
+}, 2);
+
+let modalShowing = false;
+document.getElementById('body').addEventListener('mouseup', (e) => {
+  if (modalShowing && !isParentModal(e.srcElement)) {    
+    hideModal();
+  }
+}, true);
+
+function isParentModal(el) {
+  if (el && (el.id == 'modal' || isParentModal(el.parentElement))) {
+    return true;
+  }
+  return false;
+}
+
+function hideModal() {
+  let modalEl = document.getElementById('modal');
+  modalEl.remove();
+  
+  modalShowing = false;
+}
+
+function addEventClass(dateEl) {
+  // we should populate calEvents here. but first we need to get the evt object or something
+  if (!dateEl.className.includes("event")) {
+    dateEl.className += ' event';
+    dateEl.addEventListener(
+      "mouseup",
+      showEvents,
+      true //passiveSupported ? { passive: true } : false,
+    );
+  }
+}
+
+function showEvents(e) {
+  
+  const elId = e.srcElement.parentElement.id;
+  let modalEl = document.createElement('div');
+  modalEl.id = 'modal';
+  const h4 = document.createElement('h4');
+  const ul = document.createElement('ul');
+  let i = 0;
+  for (let calEvent of calEvents) {
+    if (calEvent.id == elId) {
+      if (i++ == 0) {
+        const evt = calEvent.evt;
+        h4.innerText = `Events for ${evt[1]}/${evt[2]}`;
+        modalEl.append(h4);
+        modalEl.append(ul);
+      }
+      const li = document.createElement('li');
+      li.innerText = getEventName(calEvent.evt);
+      ul.append(li);
+    }
+  }
+  let bodyEl = document.getElementById('body');
+  modalShowing = true;
+  bodyEl.append(modalEl);
+  
+  const modalRec = modalEl.getBoundingClientRect();
+  const modalWidth = modalRec.width;
+  const modalHeight = modalRec.height;
+
+  console.log(`x bounds check: modalWidth (${modalWidth}) + e.clientX (${e.clientX}) > window.innerWidth (${window.innerWidth})`);
+  modalEl.style.left = modalWidth + e.clientX > window.innerWidth ? e.clientX - ((modalWidth + e.clientX) - window.innerWidth) - 40 : e.clientX; // need to move this to the left if we are going to go offscreen
+  modalEl.style.top = modalHeight + e.clientY > window.innerHeight ? e.clientY - ((modalHeight + e.clientY) - window.innerHeight) - 10 : e.clientY; // need to move this up if we are going to go offscreen
+  
+}
+
+function getEventName(evt) {
+  if (evt[3] == 'T') {
+    return 'Timecards Due';
+  } else if (evt[3] == 'P') {
+    return 'Payday';
+  } else {
+    let retVal = evt[4];
+    
+    return evt[4];
+  }
+}
+
+function pushCalEvent(id, evt) {
+  calEvents.push({ id: id, evt: evt});
+}
+
+// Process events
+function handleRecurringDate(dateEl, evt, recurDate, recurFunc, actionFunc) {
+  //[2024,1,1,'H','New Years'],
+  const year = evt[0];
+  const mnth = evt[1];
+  const dy = evt[2];
+  const tpe = evt[3];
+  const nme = evt[4];
+
+  while (recurDate.getFullYear() == year) {
+    recurFunc(recurDate);
+    const recurMonth = recurDate.getMonth()+1;
+    const recurDateElId = "d"+recurDate.getFullYear()+"-"+recurMonth+"-"+recurDate.getDate();
+    const recurDateEl = document.getElementById(recurDateElId);
+    if (recurDateEl) {
+      
+      pushCalEvent(recurDateElId, evt);
+      
+      addEventClass(recurDateEl);
+      
+      let rCanv = document.createElement("canvas");
+      recurDateEl.prepend(rCanv);
+      rCanv.width = 60;
+      rCanv.height = 60;
+      let rc = new canvasDraw(rCanv);
+      
+      actionFunc(rc);
+    }
+  }
+}
+
+for (let evt of events) {
+  
+  //[2024,1,1,'H','New Years'],
+  const year = evt[0];
+  const mnth = evt[1];
+  const dy = evt[2];
+  const tpe = evt[3];
+  const nme = evt[4];
+  
+  const hasCanv = tpe == 'T' || tpe == 'P' || tpe == 'B' || tpe == 'U' || tpe == 'D';
+
+  const dateElId = 'd'+year+'-'+mnth+'-'+dy;
+  pushCalEvent(dateElId, evt);
+  const dateEl = document.getElementById(dateElId);
+  addEventClass(dateEl);
+  
+  let canv = null;
+  let c = null;
+  if (hasCanv) {
+    canv = document.createElement("canvas")
+    dateEl.prepend(canv);
+    canv.width = 60;
+    canv.height = 60;
+
+    c = new canvasDraw(canv);
+  }
+
+  if (tpe == 'H') {
+    dateEl.getElementsByTagName("div")[0].style.backgroundColor = '#8bd18b';
+  } else if (tpe == 'L') {
+    dateEl.getElementsByTagName("div")[0].style.backgroundColor = 'lime';
+  } else if (tpe == 'S') {
+    dateEl.getElementsByTagName("div")[0].style.backgroundColor = '#7bfff2';
+  }
+  
+  if (tpe == 'T') {
+    const color = '#bce9e9';
+    c.drawCircle(color, 30, 30, 12, 0, Math.PI * 2, 5);
+    const recurDate = new Date(year, mnth-1, dy);
+    handleRecurringDate(dateEl, evt, recurDate, (dte) => { dte.setDate(dte.getDate()+14); }, (rc) => { 
+      rc.drawCircle(color, 30, 30, 12, 0, Math.PI * 2, 5);
+    });
+  }
+  
+  if (tpe == 'P') {
+    const color = '#dbc8e3';
+    c.drawCircle(color, 30, 30, 12, 0, Math.PI * 2, 5);
+    const recurDate = new Date(year, mnth-1, dy);
+    handleRecurringDate(dateEl, evt, recurDate, (dte) => { dte.setDate(dte.getDate()+14); }, (rc) => { 
+      rc.drawCircle(color, 30, 30, 12, 0, Math.PI * 2, 5);
+    });
+  }
+  
+  if (tpe == 'U') {
+    c.drawPolygon("blue", 30, 30, 20, 8, 3);
+  } else if (tpe == 'B') {
+    c.drawFilledPolygon("red", "red", 30, 30, 25, 4, 3);
+  } else if (tpe == 'D') {
+    c.drawFilledPolygon("black", "yellow", 30, 30, 28, 4, 3);
+  }
+  
+}
+
+/*const todayDate = new Date();
+const todayMonth = todayDate.getMonth()+1;
+const todayElId = 'd'+todayDate.getFullYear()+'-'+todayMonth+'-'+todayDate.getDate();
+const todayEl = document.getElementById(todayElId);
+
+const tcanv = document.createElement("canvas")
+todayEl.prepend(tcanv);
+tcanv.width = 60;
+tcanv.height = 60;
+const tc = new canvasDraw(tcanv);
+tc.drawFilledPolygon("black", "yellow", 30, 30, 28, 4, 3);*/
+
+
+</script>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
