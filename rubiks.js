@@ -64,7 +64,7 @@ function revolveObject(object, point, angle, axis) {
 function animate() {
 
 	cubeMatrix.rotation.x += 0.01;
-	cubeMatrix.rotation.y += 0.01;
+	cubeMatrix.rotation.y += 0.009;
 
 	renderer.render( scene, camera );
 
@@ -83,11 +83,11 @@ renderer.setAnimationLoop( animate );
 // Define colors for each face (six colors, one for each face)
 const faceColors = [
     0xff0000, // Red
-    0x00ff00, // Green
+    0xFF8C00, // Orange
     0x0000ff, // Blue
-    0xffff00, // Yellow
-    0xff00ff, // Magenta
-    0x00ffff  // Cyan
+    0x00ff00, // Green
+    0xffffff, // White
+    0xffff00  // Yellow
 ];
 
 // Create a 3x3x3 matrix of colored cubes
