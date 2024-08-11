@@ -97,4 +97,4 @@ const cubeMatrix = createCubeMatrix(cubeSize, spacing, faceColors);
 scene.add(cubeMatrix);
 
 // Position the camera
-camera.position.z = 10;
+camera.position.z = 7;
