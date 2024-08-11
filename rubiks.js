@@ -61,6 +61,13 @@ function revolveObject(object, point, angle, axis) {
     object.position.add(point);
 }
 
+function animate() {
+
+
+	renderer.render( scene, camera );
+
+}
+
 // Example usage:
 import * as THREE from 'three';
 
@@ -69,6 +76,7 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
+renderer.setAnimationLoop( animate );
 
 // Define colors for each face (six colors, one for each face)
 const faceColors = [
