@@ -63,6 +63,8 @@ function revolveObject(object, point, angle, axis) {
 
 function animate() {
 
+	cubeMatrix.rotation.x += 0.01;
+	cubeMatrix.rotation.y += 0.01;
 
 	renderer.render( scene, camera );
 
