@@ -99,7 +99,7 @@ document.body.appendChild(renderer.domElement);
 renderer.setAnimationLoop( animate );
 
 
-const r = 0xff0000, o = 0xFF8C00, b = 0x0000ff, g = 0x00ff00, w = 0xffffff, y = 0xffff00, p = 0xff00ff;
+const r = 0xff0000, o = 0xFF8C00, b = 0x0000ff, g = 0x00ff00, w = 0xffffff, y = 0xffff00, p = 0x000000;
 // Define colors for each face (six colors, one for each face)
 const faceColors = [
     r, // Red right
@@ -118,7 +118,7 @@ const allFaceColors = [
     
     , [ p, p, p, g, p, y ], [ p, p, p, g, p, p ], [ p, p, p, g, w, p ]
     , [ p, p, p, p, p, y ], [ p, p, p, p, p, p ], [ p, p, p, p, w, p ]
-    , [ p, p, b, p, p, y ], [ p, p, p, p, p, p ], [ p, p, b, p, w, p ]
+    , [ p, p, b, p, p, y ], [ p, p, b, p, p, p ], [ p, p, b, p, w, p ]
     
     , [ r, p, p, g, p, y ], [ r, p, p, g, p, p ], [ r, p, p, g, w, p ]
     , [ r, p, p, p, p, y ], [ r, p, p, p, p, p ], [ r, p, p, p, w, p ]
