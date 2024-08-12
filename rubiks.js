@@ -29,7 +29,11 @@ function createCubeMatrix(cubeSize, spacing, faceColors) {
         [ 0xff0000, 0xff0000, 0xff0000, 0xff0000, 0xff0000, 0xff0000 ]
         , [ 0x00ff00, 0x00ff00, 0x00ff00, 0x00ff00, 0x00ff00, 0x00ff00 ]
         , [ 0x0000ff, 0x0000ff, 0x0000ff, 0x0000ff, 0x0000ff, 0x0000ff ]
-    ]
+    ];
+
+    const xNames = ['left', 'center', 'right'];
+    const yNames = ['bottom', 'center', 'top'];
+    const zNames = ['back', 'center', 'front'];
 
     // x axis, left to right
     for (let x = 0; x < matrixSize; x++) {
@@ -42,15 +46,17 @@ function createCubeMatrix(cubeSize, spacing, faceColors) {
                 // Create a colored cube
                 const coloredCube = createColoredCube(faceColors);
 
+
                 // Set the position of the cube
-                coloredCube.position.set(
-                    x * (cubeSize + spacing) - (matrixSize - 1) * (cubeSize + spacing) / 2,
-                    y * (cubeSize + spacing) - (matrixSize - 1) * (cubeSize + spacing) / 2,
-                    z * (cubeSize + spacing) - (matrixSize - 1) * (cubeSize + spacing) / 2
-                );
+                const posX = x * (cubeSize + spacing) - (matrixSize - 1) * (cubeSize + spacing) / 2;
+                const posY = y * (cubeSize + spacing) - (matrixSize - 1) * (cubeSize + spacing) / 2;
+                const posZ = z * (cubeSize + spacing) - (matrixSize - 1) * (cubeSize + spacing) / 2;
+                coloredCube.position.set(posX, posY, posZ);
 
                 // Add the cube to the container
                 container.add(coloredCube);
+
+                console.log(`created cube ${xNames[x]} ${yNames[y]} ${zNames[z]}`);
             }
         }
     }
@@ -91,12 +97,12 @@ renderer.setAnimationLoop( animate );
 
 // Define colors for each face (six colors, one for each face)
 const faceColors = [
-    0xff0000, // Red
-    0xFF8C00, // Orange
-    0x0000ff, // Blue
-    0x00ff00, // Green
-    0xffffff, // White
-    0xffff00  // Yellow
+    0xff0000, // Red right
+    0xFF8C00, // Orange left
+    0x0000ff, // Blue top 
+    0x00ff00, // Green bottom
+    0xffffff, // White front
+    0xffff00  // Yellow back
 ];
 
 // Create a 3x3x3 matrix of colored cubes
