@@ -24,6 +24,7 @@ function createCubeMatrix(cubeSize, spacing, faceColors) {
 
     // Create a container for all cubes
     const container = new THREE.Group();
+    const boundingBoxes = [];
 
     const colors = [
         [ 0xff0000, 0xff0000, 0xff0000, 0xff0000, 0xff0000, 0xff0000 ]
@@ -58,13 +59,20 @@ function createCubeMatrix(cubeSize, spacing, faceColors) {
                 // Add the cube to the container
                 container.add(coloredCube);
 
+                // Create and position the bounding box
+                const boundingBox = new THREE.Box3(
+                    new THREE.Vector3(posX - cubeSize / 2, posY - cubeSize / 2, posZ - cubeSize / 2),
+                    new THREE.Vector3(posX + cubeSize / 2, posY + cubeSize / 2, posZ + cubeSize / 2)
+                );
+                boundingBoxes.push({ x: x, y: y, z: z, posX: posX, posY: posY, posZ: posZ, box: boundingBox });
+
                 console.log(`created cube${cubeIndex} ${xNames[x]} ${yNames[y]} ${zNames[z]}`);
                 cubeIndex++;
             }
         }
     }
 
-    return container;
+    return { cubes: container, boundingBoxes: boundingBoxes };
 }
 
 // Function to revolve an object around a given point
@@ -128,7 +136,8 @@ const allFaceColors = [
 // Create a 3x3x3 matrix of colored cubes
 const cubeSize = 1; // Size of each cube
 const spacing = 0.1; // Spacing between cubes
-const cubeMatrix = createCubeMatrix(cubeSize, spacing, faceColors);
+const { cubeMatrix, boundingBoxes } = createCubeMatrixWithBoundingBoxes(cubeSize, spacing, faceColors);
+//const cubeMatrix = createCubeMatrix(cubeSize, spacing, faceColors);
 scene.add(cubeMatrix);
 
 // Position the camera

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js Revolve Animation</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Initialize scene, camera, and renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Create a simple object (e.g., a cube)
+        const geometry = new THREE.BoxGeometry();
+        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+        const cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+
+        // Define the point around which the cube will revolve
+        const pointOfRevolution = new THREE.Vector3(2, 2, 0);
+
+        // Position the camera
+        camera.position.z = 10;
+
+        // Function to revolve an object around a given point
+        function revolveObject(object, point, angle, axis) {
+            // Translate the object to make the point of revolution the origin
+            object.position.sub(point);
+
+            // Rotate the object around the given axis
+            object.rotateOnAxis(axis, angle);
+
+            // Translate the object back to its original position
+            object.position.add(point);
+        }
+
+        // Animation variables
+        const duration = 1000; // 1 second
+        const totalFrames = 60; // Total frames for the animation
+        const anglePerFrame = Math.PI / 2 / totalFrames; // 90 degrees in radians divided by total frames
+        const axis = new THREE.Vector3(0, 1, 0); // Y-axis
+        let startTime = Date.now();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const elapsedTime = Date.now() - startTime;
+            const progress = Math.min(elapsedTime / duration, 1); // Progress from 0 to 1
+            const currentAngle = progress * Math.PI / 2; // Current angle to rotate
+
+            // Reset object position and rotation
+            cube.position.set(0, 0, 0);
+            cube.rotation.set(0, 0, 0);
+
+            // Apply the revolution
+            revolveObject(cube, pointOfRevolution, currentAngle, axis);
+
+            renderer.render(scene, camera);
+
+            // Stop animation when complete
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            }
+        }
+
+        animate();
+    </script>
+</body>
+</html>
