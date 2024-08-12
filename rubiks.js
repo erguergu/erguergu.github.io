@@ -31,12 +31,14 @@ function createCubeMatrix(cubeSize, spacing, faceColors) {
         , [ 0x0000ff, 0x0000ff, 0x0000ff, 0x0000ff, 0x0000ff, 0x0000ff ]
     ]
 
-    // Loop through each position in the matrix
+    // x axis, left to right
     for (let x = 0; x < matrixSize; x++) {
+
+
         for (let y = 0; y < matrixSize; y++) {
             for (let z = 0; z < matrixSize; z++) {
                 // Create a colored cube
-                const coloredCube = createColoredCube(colors[x]);
+                const coloredCube = createColoredCube(colors[y]);
 
                 // Set the position of the cube
                 coloredCube.position.set(
