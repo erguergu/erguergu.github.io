@@ -35,6 +35,8 @@ function createCubeMatrix(cubeSize, spacing, faceColors) {
     const yNames = ['bottom', 'center', 'top'];
     const zNames = ['back', 'center', 'front'];
 
+    let cubeIndex = 0;
+
     // x axis, left to right
     for (let x = 0; x < matrixSize; x++) {
 
@@ -44,7 +46,7 @@ function createCubeMatrix(cubeSize, spacing, faceColors) {
             // z axis, back to front
             for (let z = 0; z < matrixSize; z++) {
                 // Create a colored cube
-                const coloredCube = createColoredCube(faceColors);
+                const coloredCube = createColoredCube(allFaceColors[cubeIndex]);
 
 
                 // Set the position of the cube
@@ -56,7 +58,8 @@ function createCubeMatrix(cubeSize, spacing, faceColors) {
                 // Add the cube to the container
                 container.add(coloredCube);
 
-                console.log(`created cube ${xNames[x]} ${yNames[y]} ${zNames[z]}`);
+                console.log(`created cube${cubeIndex} ${xNames[x]} ${yNames[y]} ${zNames[z]}`);
+                cubeIndex++;
             }
         }
     }
@@ -95,15 +98,31 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 renderer.setAnimationLoop( animate );
 
+
+const r = 0xff0000, o = 0xFF8C00, b = 0x0000ff, g = 0x00ff00, w = 0xffffff, y = 0xffff00, p = 0xff00ff;
 // Define colors for each face (six colors, one for each face)
 const faceColors = [
-    0xff0000, // Red right
-    0xFF8C00, // Orange left
-    0x0000ff, // Blue top 
-    0x00ff00, // Green bottom
-    0xffffff, // White front
-    0xffff00  // Yellow back
+    r, // Red right
+    o, // Orange left
+    b, // Blue top 
+    g, // Green bottom
+    w, // White front
+    y  // Yellow back
 ];
+
+const allFaceColors = [ 
+      [ y, o, p, g, p, p ], [ p, o, p, g, p, p ], [ p, p, p, p, p, p ]
+    , [ p, p, p, p, p, p ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
+    , [ p, p, p, p, p, p ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
+    
+    , [ p, p, p, p, p, p ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
+    , [ p, p, p, p, p, p ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
+    , [ p, p, p, p, p, p ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
+    
+    , [ p, p, p, p, p, p ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
+    , [ p, p, p, p, p, p ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
+    , [ p, p, p, p, p, p ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
+ ];
 
 // Create a 3x3x3 matrix of colored cubes
 const cubeSize = 1; // Size of each cube
