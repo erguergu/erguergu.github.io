@@ -1,4 +1,3 @@
-// Assuming you have already set up your scene, camera, and renderer
 
 // Function to create a cube with independent face colors
 function createColoredCube(faceColors) {
@@ -26,12 +25,18 @@ function createCubeMatrix(cubeSize, spacing, faceColors) {
     // Create a container for all cubes
     const container = new THREE.Group();
 
+    const colors = [
+        [ 0xff0000, 0xff0000, 0xff0000, 0xff0000, 0xff0000, 0xff0000 ]
+        , [ 0x00ff00, 0x00ff00, 0x00ff00, 0x00ff00, 0x00ff00, 0x00ff00 ]
+        , [ 0x0000ff, 0x0000ff, 0x0000ff, 0x0000ff, 0x0000ff, 0x0000ff ]
+    ]
+
     // Loop through each position in the matrix
     for (let x = 0; x < matrixSize; x++) {
         for (let y = 0; y < matrixSize; y++) {
             for (let z = 0; z < matrixSize; z++) {
                 // Create a colored cube
-                const coloredCube = createColoredCube(faceColors);
+                const coloredCube = createColoredCube(colors[x]);
 
                 // Set the position of the cube
                 coloredCube.position.set(
