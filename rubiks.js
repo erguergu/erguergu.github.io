@@ -40,7 +40,7 @@ function createCubeMatrix(cubeSize, spacing, faceColors) {
             // z axis, back to front
             for (let z = 0; z < matrixSize; z++) {
                 // Create a colored cube
-                const coloredCube = createColoredCube(faceColors;
+                const coloredCube = createColoredCube(faceColors);
 
                 // Set the position of the cube
                 coloredCube.position.set(
