@@ -136,8 +136,7 @@ const allFaceColors = [
 // Create a 3x3x3 matrix of colored cubes
 const cubeSize = 1; // Size of each cube
 const spacing = 0.1; // Spacing between cubes
-const { cubeMatrix, boundingBoxes } = createCubeMatrixWithBoundingBoxes(cubeSize, spacing, faceColors);
-//const cubeMatrix = createCubeMatrix(cubeSize, spacing, faceColors);
+const { cubeMatrix, boundingBoxes } = createCubeMatrix(cubeSize, spacing, faceColors);
 scene.add(cubeMatrix);
 
 // Position the camera
