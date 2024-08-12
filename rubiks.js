@@ -111,17 +111,17 @@ const faceColors = [
 ];
 
 const allFaceColors = [ 
-      [ y, o, p, g, p, p ], [ p, o, p, g, p, p ], [ p, p, p, p, p, p ]
-    , [ p, p, p, p, p, p ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
-    , [ p, p, p, p, p, p ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
+      [ p, o, p, g, p, y ], [ p, o, p, g, p, p ], [ p, p, p, p, p, p ]
+    , [ p, p, p, p, p, y ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
+    , [ p, p, p, p, p, y ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
     
-    , [ p, p, p, p, p, p ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
-    , [ p, p, p, p, p, p ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
-    , [ p, p, p, p, p, p ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
+    , [ p, p, p, p, p, y ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
+    , [ p, p, p, p, p, y ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
+    , [ p, p, p, p, p, y ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
     
-    , [ p, p, p, p, p, p ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
-    , [ p, p, p, p, p, p ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
-    , [ p, p, p, p, p, p ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
+    , [ p, p, p, p, p, y ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
+    , [ p, p, p, p, p, y ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
+    , [ p, p, p, p, p, y ], [ p, p, p, p, p, p ], [ p, p, p, p, p, p ]
  ];
 
 // Create a 3x3x3 matrix of colored cubes
