@@ -23,6 +23,7 @@ function createCubeMatrix(cubeSize, spacing, faceColors) {
     const matrixSize = 3; // 3x3x3 matrix
 
     // Create a container for all cubes
+    const cubes = [];
     const container = new THREE.Group();
     const boundingBoxes = [];
 
@@ -49,7 +50,6 @@ function createCubeMatrix(cubeSize, spacing, faceColors) {
                 // Create a colored cube
                 const coloredCube = createColoredCube(allFaceColors[cubeIndex]);
 
-
                 // Set the position of the cube
                 const posX = x * (cubeSize + spacing) - (matrixSize - 1) * (cubeSize + spacing) / 2;
                 const posY = y * (cubeSize + spacing) - (matrixSize - 1) * (cubeSize + spacing) / 2;
@@ -57,6 +57,7 @@ function createCubeMatrix(cubeSize, spacing, faceColors) {
                 coloredCube.position.set(posX, posY, posZ);
 
                 // Add the cube to the container
+                cubes.push(coloredCube);
                 container.add(coloredCube);
 
                 // Create and position the bounding box
@@ -72,7 +73,7 @@ function createCubeMatrix(cubeSize, spacing, faceColors) {
         }
     }
 
-    return { cubes: container, boundingBoxes: boundingBoxes };
+    return { cubes: cubes, cubeMatrix: container, boundingBoxes: boundingBoxes };
 }
 
 // Function to revolve an object around a given point
@@ -87,10 +88,38 @@ function revolveObject(object, point, angle, axis) {
     object.position.add(point);
 }
 
+function beginRotate() {
+    isRotating = true;
+}
+
+
+
+// Animation variables
+let isRotating = false;
+const duration = 1000; // 1 second
+const totalFrames = 30; // Total frames for the animation
+const anglePerFrame = Math.PI / 2 / totalFrames; // 90 degrees in radians divided by total frames
+const axis = new THREE.Vector3(0, 1, 0); // Y-axis
+let startTime = Date.now();
 function animate() {
 
-	cubeMatrix.rotation.x += 0.01;
-	cubeMatrix.rotation.y += 0.009;
+    // move some of this into the revolveobject thing
+    const elapsedTime = Date.now() - startTime;
+    const progress = Math.min(elapsedTime / duration, 1); // Progress from 0 to 1
+    const currentAngle = progress * Math.PI / 2; // Current angle to rotate
+
+    // Reset object position and rotation
+    const cube = cubes[2];
+    cube.position.set(0, 0, 0);
+    cube.rotation.set(0, 0, 0);
+
+    // Apply the revolution
+    if (progress < 1) {
+        revolveObject(cube, pointOfRevolution, currentAngle, axis);
+    }
+
+	// cubeMatrix.rotation.x += 0.01;
+	// cubeMatrix.rotation.y += 0.009;
 
 	renderer.render( scene, camera );
 
@@ -136,8 +165,9 @@ const allFaceColors = [
 // Create a 3x3x3 matrix of colored cubes
 const cubeSize = 1; // Size of each cube
 const spacing = 0.1; // Spacing between cubes
-const { cubeMatrix, boundingBoxes } = createCubeMatrix(cubeSize, spacing, faceColors);
+const { cubes, cubeMatrix, boundingBoxes } = createCubeMatrix(cubeSize, spacing, faceColors);
 scene.add(cubeMatrix);
 
 // Position the camera
 camera.position.z = 5.5;
+
