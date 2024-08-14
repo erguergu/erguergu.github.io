@@ -92,26 +92,32 @@ function beginRotate() {
     isRotating = true;
 }
 
-
-
-// Animation variables
-let isRotating = false;
-let startTime = Date.now();
-function animate() {
+function doRotate() {
 
     // add cubes to rotatorobj
     for (let i = 0; i < 9; i++) {
        rotatorObj.attach(cubes[i]);
     }
 
+    
     // rotate the rotator
-    rotatorObj.rotation.x += 0.01;
+    rotatorObj.rotation.x += Math.PI / 60; // 90 degrees every half second
 
     // add cubes back to the parent
     for (let i = 0; i < 9; i++) {
        cubeMatrix.attach(cubes[i]);
     }
+}
 
+// Animation variables
+let isRotating = false;
+let startTime = Date.now();
+let frameCount = 0;
+function animate() {
+
+    if (frameCount++ < 30) {
+       doRotate();
+    }
     // cubeMatrix.rotation.x += 0.01;
     // cubeMatrix.rotation.y += 0.009;
 
