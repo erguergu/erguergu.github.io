@@ -118,6 +118,10 @@ function animate() {
     if (frameCount++ < 30) {
        doRotate();
     }
+
+    if (frameCount == 60) {
+        frameCount = 0;
+    }
     // cubeMatrix.rotation.x += 0.01;
     // cubeMatrix.rotation.y += 0.009;
 
