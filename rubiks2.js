@@ -78,12 +78,12 @@ function createCubeMatrix(cubeSize, spacing, faceColors) {
 
 function getColorNames(colors) {
     const colorLookup = [
-        { 'key': 'r', 'val': 'Red' }
-        , { 'key': 'o', 'val': 'Orange' }
-        , { 'key': 'b', 'val': 'Blue' }
-        , { 'key': 'g', 'val': 'Green' }
-        , { 'key': 'w', 'val': 'White' }
-        , { 'key': 'y', 'val': 'Yellow' }
+        { key: 'r', val: 'Red' }
+        , { key: 'o', val: 'Orange' }
+        , { key: 'b', val: 'Blue' }
+        , { key: 'g', val: 'Green' }
+        , { key: 'w', val: 'White' }
+        , { key: 'y', val: 'Yellow' }
     ];
     const retVal = colors
         .filter((p) => p != 'p')
