@@ -67,13 +67,31 @@ function createCubeMatrix(cubeSize, spacing, faceColors) {
                 );
                 boundingBoxes.push({ x: x, y: y, z: z, posX: posX, posY: posY, posZ: posZ, box: boundingBox });
 
-                console.log(`created cube${cubeIndex} ${xNames[x]} ${yNames[y]} ${zNames[z]}`);
+                console.log(`created cube${cubeIndex} ${xNames[x]} ${yNames[y]} ${zNames[z]} (${getColorNames(allFaceColors[cubeIndex])})`);
                 cubeIndex++;
             }
         }
     }
 
     return { cubes: cubes, cubeMatrix: container, boundingBoxes: boundingBoxes };
+}
+
+function getColorNames(colors) {
+    colorLookup = [
+        { 'key': 'r', 'val': 'Red' }
+        , { 'key': 'o', 'val': 'Orange' }
+        , { 'key': 'b', 'val': 'Blue' }
+        , { 'key': 'g', 'val': 'Green' }
+        , { 'key': 'w', 'val': 'White' }
+        , { 'key': 'y', 'val': 'Yellow' }
+    ];
+    const retVal = colors
+        .filter((p) => p != 'p')
+        .map((p) => colorLookup
+           .filter(q => q.key == p)[0].val
+        )
+        .join(', ');
+    return retVal;
 }
 
 // Function to revolve an object around a given point
@@ -99,7 +117,6 @@ function doRotate() {
        rotatorObj.attach(cubes[i]);
     }
 
-    
     // rotate the rotator
     rotatorObj.rotation.x += (Math.PI / 2) / framesPerStep; // 90 degrees every half second
 
