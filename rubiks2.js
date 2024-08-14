@@ -100,15 +100,15 @@ let startTime = Date.now();
 function animate() {
 
     // add cubes to rotatorobj
-    //rotatorObj.add(cubes[2]);
+    rotatorObj.attach(cubes[2]);
 
     // rotate the rotator
-    //rotatorObj.rotation.x += 0.01;
+    rotatorObj.rotation.x += 0.01;
 
     // add cube back to the parent
-    //cubeMatrix.add(cubes[2]);
+    cubeMatrix.attach(cubes[2]);
 
-    cubeMatrix.rotation.x += 0.01;
+    // cubeMatrix.rotation.x += 0.01;
     // cubeMatrix.rotation.y += 0.009;
 
     renderer.render( scene, camera );
