@@ -96,33 +96,22 @@ function beginRotate() {
 
 // Animation variables
 let isRotating = false;
-const duration = 1000; // 1 second
-const totalFrames = 30; // Total frames for the animation
-const anglePerFrame = Math.PI / 2 / totalFrames; // 90 degrees in radians divided by total frames
-const axis = new THREE.Vector3(0, 1, 0); // Y-axis
 let startTime = Date.now();
 function animate() {
 
-    // move some of this into the revolveobject thing
-    const elapsedTime = Date.now() - startTime;
-    const progress = Math.min(elapsedTime / duration, 1); // Progress from 0 to 1
-    const currentAngle = progress * Math.PI / 2; // Current angle to rotate
+    // add cubes to rotatorobj
+    rotatorObj.add(cubes[2]);
 
-    // Reset object position and rotation
-    const cube = cubes[2];
-    cube.position.set(0, 0, 0);
-    cube.rotation.set(0, 0, 0);
+    // rotate the rotator
+    rotatorObj.rotation.x += 0.01;
 
-    // Apply the revolution
-    if (progress < 1) {
-        revolveObject(cube, pointOfRevolution, currentAngle, axis);
-    }
+    // add cube back to the parent
+    cubeMatrix.add(cubes[2]);
 
-	// cubeMatrix.rotation.x += 0.01;
-	// cubeMatrix.rotation.y += 0.009;
+    // cubeMatrix.rotation.x += 0.01;
+    // cubeMatrix.rotation.y += 0.009;
 
-	renderer.render( scene, camera );
-
+    renderer.render( scene, camera );
 }
 
 // Example usage:
@@ -167,6 +156,8 @@ const cubeSize = 1; // Size of each cube
 const spacing = 0.1; // Spacing between cubes
 const { cubes, cubeMatrix, boundingBoxes } = createCubeMatrix(cubeSize, spacing, faceColors);
 scene.add(cubeMatrix);
+const rotatorObj =  new THREE.Group();
+scene.add(rotatorObj);
 
 // Position the camera
 camera.position.z = 5.5;
