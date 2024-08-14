@@ -77,7 +77,7 @@ function createCubeMatrix(cubeSize, spacing, faceColors) {
 }
 
 function getColorNames(colors) {
-    colorLookup = [
+    const colorLookup = [
         { 'key': 'r', 'val': 'Red' }
         , { 'key': 'o', 'val': 'Orange' }
         , { 'key': 'b', 'val': 'Blue' }
