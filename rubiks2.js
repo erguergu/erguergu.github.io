@@ -101,7 +101,7 @@ function doRotate() {
 
     
     // rotate the rotator
-    rotatorObj.rotation.x += Math.PI / 60; // 90 degrees every half second
+    rotatorObj.rotation.x += (Math.PI / 2) / framesPerStep; // 90 degrees every half second
 
     // add cubes back to the parent
     for (let i = 0; i < 9; i++) {
@@ -113,13 +113,14 @@ function doRotate() {
 let isRotating = false;
 let startTime = Date.now();
 let frameCount = 0;
+const framesPerStep = 20;
 function animate() {
 
-    if (frameCount++ < 30) {
+    if (frameCount++ < framesPerStep) {
        doRotate();
     }
 
-    if (frameCount == 60) {
+    if (frameCount == framesPerStep * 2) {
         frameCount = 0;
     }
     // cubeMatrix.rotation.x += 0.01;
