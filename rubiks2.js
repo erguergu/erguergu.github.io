@@ -334,8 +334,17 @@ function isCubeInFace(cube, faceIndex) {
     worldVec.x = Math.round(worldVec.x*10)/10;
     worldVec.y = Math.round(worldVec.y*10)/10;
     worldVec.z = Math.round(worldVec.z*10)/10;
-    for (let actualInd of faceIndex.actuals) {
-        const coord = coords[actualInd];
+
+    // okay what is below does not work.
+    // first, loop through coords, and find one that matches
+    // the index of the coord needs to match the index of this faceIndex.indexes
+    // It's an index of an index, and that index of an index needs to then be used
+    // to find the actual. Is that true?
+    // Wait... isn't this actually much simpler?
+    // Maybe I can just hard code the locations??
+
+    for (let ind of faceIndex.indexes) {
+        const coord = coords[ind];
         if (coord.v.x == worldVec.x && coord.v.y == worldVec.y && coord.v.z == worldVec.z) {
             // we found it!
             return true;
@@ -407,17 +416,11 @@ function findFaceFromGesture() {
                 // this is a rotation on the z-front
                 faceToRotate = 'z-front';
                 rotateDir = yDir;
-            // } else if (yDir != 0) {
-            //     const xLeft = faceIndexes.find((p) => p.name == 'x-left');
-            //     const xCenter = faceIndexes.find((p) => p.name == 'x-center');
-            //     const xRight = faceIndexes.find((p) => p.name == 'x-right');
-            //     if (xLeft.actuals.filter((p) => p = ))
-            // } else if (xDir != 0) {
             } else {
-                isRotating = false;
-                // oh it might be here...
-                const thing = findFaceFromMesh(intersects[0].object, xDir, yDir);
-                console.log(thing);
+
+                faceToRotate = findFaceFromMesh(intersects[0].object, xDir, yDir);
+                isRotating = true;
+                rotateDir = xDir == 0 ? yDir : xDir;
             }
         }
     }
