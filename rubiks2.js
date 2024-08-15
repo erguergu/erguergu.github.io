@@ -566,6 +566,10 @@ function onTouchStart(event) {
     handleMoveStart(event.changedTouches[0].clientX, event.changedTouches[0].clientY);
 }
 
+function onTouchMove(event) {
+    event.preventDefault();
+}
+
 function onMouseEnd(event) {
     if (!touchHappened) {
         handleMoveEnd(event.clientX, event.clientY);
@@ -582,6 +586,7 @@ function onTouchEnd(event) {
 
 window.addEventListener("touchstart", onTouchStart, false);
 window.addEventListener("touchend", onTouchEnd, false);
+window.addEventListener("touchmove", onTouchMove, { passive: false });
 
 window.onresize = reportWindowSize;
 window.addEventListener('mousedown', onMouseStart, false);
