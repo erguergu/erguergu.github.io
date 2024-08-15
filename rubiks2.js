@@ -203,30 +203,43 @@ function doRotate(faceName, direction) {
 let faceToRotate = 'x-left';
 let rotateDir = 1;
 let frameCount = 0;
-const framesPerStep = 8;
+const framesPerStep = 6;
 let rotCount = 0;
+let maxRots = 30;
+const moveHistory = [];
 const rotSteps = [
     { faceToRotate: 'y-bottom', rotateDir: -1 }
     , { faceToRotate: 'x-left', rotateDir: 1 }
 ];
 
 function animate() {
-    if (frameCount == 0) {
-        //getNextRotation();
-        setRandomRotation();
-        resetFaces();
-    }
 
-    if (frameCount++ < framesPerStep) {
-        doRotate(faceToRotate, rotateDir);
-    } else if (frameCount == framesPerStep + 1) {
-        resetFaces();
-    } else if (frameCount == framesPerStep * 2) {
-        if (rotCount == 1) {
-            //frameCount = 999;
+    if (rotCount < maxRots) {
+        if (frameCount == 0) {
+            //getNextRotation();
+            setRandomRotation();
+            resetFaces();
+        }
+        if (frameCount++ < framesPerStep) {
+            doRotate(faceToRotate, rotateDir);
+        } else if (frameCount == framesPerStep + 1) {
+            resetFaces();
+        } else if (frameCount == framesPerStep * 2) {
             frameCount = 0;
-        } else {
+            moveHistory.push({ faceToRotate: faceToRotate, rotateDir: rotateDir});
+            rotCount++;
+        }
+    } else if (moveHistory.length > 0) {
+        if (frameCount++ < framesPerStep) {
+            faceToRotate = moveHistory[moveHistory.length-1].faceToRotate;
+            console.log(`undorotate: ${faceToRotate}`, moveHistory);
+            rotateDir = moveHistory[moveHistory.length-1].rotateDir*-1;
+            doRotate(faceToRotate, rotateDir);
+        } else if (frameCount == framesPerStep + 1) {
+            resetFaces();
+        } else if (frameCount == framesPerStep * 2) {
             frameCount = 0;
+            moveHistory.splice(moveHistory.length-1);
             rotCount++;
         }
     }
