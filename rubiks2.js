@@ -3,9 +3,9 @@
 let faceToRotate = 'x-left';
 let rotateDir = 1;
 let frameCount = 0;
-const framesPerStep = 8;
+const framesPerStep = 6;
 let rotCount = 0;
-let maxRots = getRandomInt(10)+10; // between 30 and 60 moves to scramble
+let maxRots = getRandomInt(30)+30; // between 30 and 60 moves to scramble
 let isScrambling = true;
 let isSolving = false;
 let isRotating = false;
