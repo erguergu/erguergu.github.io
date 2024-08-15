@@ -205,7 +205,9 @@ let rotateDir = 1;
 let frameCount = 0;
 const framesPerStep = 6;
 let rotCount = 0;
-let maxRots = 30;
+let maxRots = getRandomInt(30)+30; // between 30 and 60 moves to scramble
+let isScrambling = true;
+let isSolving = false;
 const moveHistory = [];
 const rotSteps = [
     { faceToRotate: 'y-bottom', rotateDir: -1 }
@@ -214,7 +216,7 @@ const rotSteps = [
 
 function animate() {
 
-    if (rotCount < maxRots) {
+    if (isScrambling) {
         if (frameCount == 0) {
             //getNextRotation();
             setRandomRotation();
@@ -228,11 +230,16 @@ function animate() {
             frameCount = 0;
             moveHistory.push({ faceToRotate: faceToRotate, rotateDir: rotateDir});
             rotCount++;
+            if (rotCount >= maxRots) {
+                console.log(`just hit ${maxRots}, time to solve...`);
+                isScrambling = false;
+                isSolving = true;
+            }
         }
-    } else if (moveHistory.length > 0) {
+    } else if (isSolving) {
         if (frameCount++ < framesPerStep) {
             faceToRotate = moveHistory[moveHistory.length-1].faceToRotate;
-            console.log(`undorotate: ${faceToRotate}`, moveHistory);
+            //console.log(`undorotate: ${faceToRotate}`, moveHistory);
             rotateDir = moveHistory[moveHistory.length-1].rotateDir*-1;
             doRotate(faceToRotate, rotateDir);
         } else if (frameCount == framesPerStep + 1) {
@@ -240,6 +247,9 @@ function animate() {
         } else if (frameCount == framesPerStep * 2) {
             frameCount = 0;
             moveHistory.splice(moveHistory.length-1);
+            if (moveHistory.length == 0) {
+                isSolving = false;
+            }
             rotCount++;
         }
     }
@@ -365,6 +375,16 @@ const { cubes, cubeMatrix, coords } = createCubeMatrix(cubeSize, spacing, faceCo
 scene.add(cubeMatrix);
 const rotatorObj = new THREE.Group();
 scene.add(rotatorObj);
+    
+function reportWindowSize() {
+    //console.log(`height: ${window.innerHeight}, width: ${window.innerWidth}`);
+    camera.aspect = window.innerWidth / window.innerHeight
+    camera.updateProjectionMatrix()
+    renderer.setSize(window.innerWidth, window.innerHeight)
+}
+
+window.onresize = reportWindowSize;
+
 initializeCoords();
 
 // Position the camera
