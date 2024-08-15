@@ -25,12 +25,12 @@ function createCubeMatrix(cubeSize, spacing, faceColors) {
     // Create a container for all cubes
     const cubes = [];
     const container = new THREE.Group();
-    const boundingBoxes = [];
+    const coords = [];
 
     const colors = [
-        [ 0xff0000, 0xff0000, 0xff0000, 0xff0000, 0xff0000, 0xff0000 ]
-        , [ 0x00ff00, 0x00ff00, 0x00ff00, 0x00ff00, 0x00ff00, 0x00ff00 ]
-        , [ 0x0000ff, 0x0000ff, 0x0000ff, 0x0000ff, 0x0000ff, 0x0000ff ]
+        [0xff0000, 0xff0000, 0xff0000, 0xff0000, 0xff0000, 0xff0000]
+        , [0x00ff00, 0x00ff00, 0x00ff00, 0x00ff00, 0x00ff00, 0x00ff00]
+        , [0x0000ff, 0x0000ff, 0x0000ff, 0x0000ff, 0x0000ff, 0x0000ff]
     ];
 
     const xNames = ['left', 'center', 'right'];
@@ -56,94 +56,182 @@ function createCubeMatrix(cubeSize, spacing, faceColors) {
                 const posZ = z * (cubeSize + spacing) - (matrixSize - 1) * (cubeSize + spacing) / 2;
                 coloredCube.position.set(posX, posY, posZ);
 
+
                 // Add the cube to the container
                 cubes.push(coloredCube);
                 container.add(coloredCube);
+                coords.push({ x: x, y: y, z: z, v: new THREE.Vector3( 0, 0, 0) });
 
-                // Create and position the bounding box
-                const boundingBox = new THREE.Box3(
-                    new THREE.Vector3(posX - cubeSize / 2, posY - cubeSize / 2, posZ - cubeSize / 2),
-                    new THREE.Vector3(posX + cubeSize / 2, posY + cubeSize / 2, posZ + cubeSize / 2)
-                );
-                boundingBoxes.push({ x: x, y: y, z: z, posX: posX, posY: posY, posZ: posZ, box: boundingBox });
-
-                console.log(`created cube${cubeIndex} ${xNames[x]} ${yNames[y]} ${zNames[z]} (${getColorNames(allFaceColors[cubeIndex])})`);
+                //console.log(`created cube${cubeIndex} ${xNames[x]} ${yNames[y]} ${zNames[z]} (${getColorNames(allFaceColors[cubeIndex])})`);
                 cubeIndex++;
             }
         }
     }
 
-    return { cubes: cubes, cubeMatrix: container, boundingBoxes: boundingBoxes };
+    return { cubes: cubes, cubeMatrix: container, coords: coords };
 }
 
 function getColorNames(colors) {
-    const colorLookup = [
-        { key: 'r', val: 'Red' }
-        , { key: 'o', val: 'Orange' }
-        , { key: 'b', val: 'Blue' }
-        , { key: 'g', val: 'Green' }
-        , { key: 'w', val: 'White' }
-        , { key: 'y', val: 'Yellow' }
-    ];
-    const retVal = colors
-        .filter((p) => p != 'p')
-        .map((p) => colorLookup
-           .filter(q => q.key == p)[0].val
-        )
-        .join(', ');
-    return retVal;
+    return 'oof';
+    // const colorLookup = [
+    //     { key: 'r', val: 'Red' }
+    //     , { key: 'o', val: 'Orange' }
+    //     , { key: 'b', val: 'Blue' }
+    //     , { key: 'g', val: 'Green' }
+    //     , { key: 'w', val: 'White' }
+    //     , { key: 'y', val: 'Yellow' }
+    // ];
+    // const retVal = colors
+    //     .filter( (p) => p != 'p' )
+    //     .map( (p) => colorLookup.filter( (q) => q.key == p )[0].val )
+    //     .join(', ');
+    // return retVal;
 }
 
-// Function to revolve an object around a given point
-function revolveObject(object, point, angle, axis) {
-    // Step 1: Translate the object to make the point of revolution the origin
-    object.position.sub(point);
-
-    // Step 2: Rotate the object around the given axis
-    object.rotateOnAxis(axis, angle);
-
-    // Step 3: Translate the object back to its original position
-    object.position.add(point);
+function veq( v1, v2, epsilon = 0.001 ) {
+    
+    //console.log(`eps: ${epsilon}`);
+    return ( ( Math.abs( v1.x - v2.x ) < epsilon ) && ( Math.abs( v1.y - v2.y ) < epsilon ) && ( Math.abs( v1.z - v2.z ) < epsilon ) );
 }
 
-function beginRotate() {
-    isRotating = true;
+function getRandomInt(max) {
+    return Math.floor(Math.random() * max);
 }
 
-function doRotate() {
+function setRandomRotation() {
 
+    // use this flag to ensure that this move doesn't simply negate the last move
+    let wegood = false;
+
+    while (!wegood) {
+        const lastFace = faceToRotate;
+        const lastDir = rotateDir;
+        const ind = getRandomInt(faceIndexes.length); // 0-8
+        faceToRotate = faceIndexes[ind].name;
+
+        rotateDir = getRandomInt(2) == 0 ? -1 : 1;
+
+        if (!(lastFace == faceToRotate && lastDir != rotateDir)) {
+            wegood = true;
+        } else {
+            console.log(`fixed one!`);
+        }
+        //console.log(`setRandomRotation selected ${faceToRotate}, ${rotateDir}`);
+    }
+}
+
+function getNextRotation() {
+    const rot = rotSteps[rotCount];
+    faceToRotate = rot.faceToRotate;
+    rotateDir = rot.rotateDir;
+}
+
+function initializeCoords() {
+    //console.log(`initializeCoordss`);
+    // this needs to happen after everything is added to the scene, just one time
+    // loop through all the cubes, and set the coord[] vector for each cube[] to the world vec
+    for (let i = 0; i < cubes.length; i++) {
+        const worldVec = new THREE.Vector3();
+        const cube = cubes[i];
+        cube.getWorldPosition(worldVec);
+        coords[i].v = worldVec;
+    }
+    //console.log(coords);
+    resetFaces();
+}
+
+function resetFaces() {
+    const worldVecs = [];
+    //console.log(`resetFaces`);
+    for (let i = 0; i < cubes.length; i++) {
+        const worldVec = new THREE.Vector3();
+        cubes[i].getWorldPosition(worldVec);
+        worldVec.x = Math.round(worldVec.x*10)/10;
+        worldVec.y = Math.round(worldVec.y*10)/10;
+        worldVec.z = Math.round(worldVec.z*10)/10;
+        worldVecs.push(worldVec);
+    }
+    for (let faceIndex of faceIndexes) {
+        faceIndex.actuals = [];
+        for (let index of faceIndex.indexes) {
+            const coord = coords[index];
+            for (let n = 0; n < worldVecs.length; n++) {
+                if (veq(coord.v, worldVecs[n])) {
+                    faceIndex.actuals.push(n)
+                }
+            }
+        }
+    }
+    //console.log(worldVecs);
+}
+
+function doRotate(faceName, direction) {
+
+    const face = faceIndexes.filter((f) => f.name == faceName)[0];
+
+    rotatorObj.rotation.set( 0, 0, 0 );
     // add cubes to rotatorobj
-    for (let i = 0; i < 9; i++) {
-       rotatorObj.attach(cubes[i]);
+    for (let i of face.actuals) {
+        rotatorObj.attach(cubes[i]);
     }
 
     // rotate the rotator
-    rotatorObj.rotation.x += (Math.PI / 2) / framesPerStep; // 90 degrees every half second
+    if (faceName.startsWith('z')) {
+        if (frameCount == 1) {
+            //console.log(`rotating ${faceName} along z axis`, face);
+        }
+        rotatorObj.rotation.z += direction * ((Math.PI / 2) / framesPerStep);
+    } else if (faceName.startsWith('x')) {
+        if (frameCount == 1) {
+            //console.log(`rotating ${faceName} along x axis`, face);
+        }
+        rotatorObj.rotation.x += direction * ((Math.PI / 2) / framesPerStep);
+    } else {
+        if (frameCount == 1) {
+            //console.log(`rotating ${faceName} along y axis`, face);
+        }
+        rotatorObj.rotation.y += direction * ((Math.PI / 2) / framesPerStep);
+    }
 
     // add cubes back to the parent
-    for (let i = 0; i < 9; i++) {
-       cubeMatrix.attach(cubes[i]);
+    for (let i of face.actuals) {
+        cubeMatrix.attach(cubes[i]);
     }
 }
 
 // Animation variables
-let isRotating = false;
-let startTime = Date.now();
+let faceToRotate = 'x-left';
+let rotateDir = 1;
 let frameCount = 0;
-const framesPerStep = 20;
+const framesPerStep = 8;
+let rotCount = 0;
+const rotSteps = [
+    { faceToRotate: 'y-bottom', rotateDir: -1 }
+    , { faceToRotate: 'x-left', rotateDir: 1 }
+];
+
 function animate() {
+    if (frameCount == 0) {
+        //getNextRotation();
+        setRandomRotation();
+        resetFaces();
+    }
 
     if (frameCount++ < framesPerStep) {
-       doRotate();
+        doRotate(faceToRotate, rotateDir);
+    } else if (frameCount == framesPerStep + 1) {
+        resetFaces();
+    } else if (frameCount == framesPerStep * 2) {
+        if (rotCount == 1) {
+            //frameCount = 999;
+            frameCount = 0;
+        } else {
+            frameCount = 0;
+            rotCount++;
+        }
     }
 
-    if (frameCount == framesPerStep * 2) {
-        frameCount = 0;
-    }
-    // cubeMatrix.rotation.x += 0.01;
-    // cubeMatrix.rotation.y += 0.009;
-
-    renderer.render( scene, camera );
+    renderer.render(scene, camera);
 }
 
 // Example usage:
@@ -154,7 +242,7 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
-renderer.setAnimationLoop( animate );
+renderer.setAnimationLoop(animate);
 
 
 const r = 0xff0000, o = 0xFF8C00, b = 0x0000ff, g = 0x00ff00, w = 0xffffff, y = 0xffff00, p = 0x000000;
@@ -168,28 +256,106 @@ const faceColors = [
     y  // Yellow back
 ];
 
-const allFaceColors = [ 
+const allFaceColors = [
     //  left bottom back      left bottom cent     left bottom front
-      [ p, o, p, g, p, y ], [ p, o, p, g, p, p ], [ p, o, p, g, w, p ]
-    , [ p, o, p, p, p, y ], [ p, o, p, p, p, p ], [ p, o, p, p, w, p ]
-    , [ p, o, b, p, p, y ], [ p, o, b, p, p, p ], [ p, o, b, p, w, p ]
-    
-    , [ p, p, p, g, p, y ], [ p, p, p, g, p, p ], [ p, p, p, g, w, p ]
-    , [ p, p, p, p, p, y ], [ p, p, p, p, p, p ], [ p, p, p, p, w, p ]
-    , [ p, p, b, p, p, y ], [ p, p, b, p, p, p ], [ p, p, b, p, w, p ]
-    
-    , [ r, p, p, g, p, y ], [ r, p, p, g, p, p ], [ r, p, p, g, w, p ]
-    , [ r, p, p, p, p, y ], [ r, p, p, p, p, p ], [ r, p, p, p, w, p ]
-    , [ r, p, b, p, p, y ], [ r, p, b, p, p, p ], [ r, p, b, p, w, p ]
- ];
+    [p, o, p, g, p, y], [p, o, p, g, p, p], [p, o, p, g, w, p]
+    , [p, o, p, p, p, y], [p, o, p, p, p, p], [p, o, p, p, w, p]
+    , [p, o, b, p, p, y], [p, o, b, p, p, p], [p, o, b, p, w, p]
+
+    , [p, p, p, g, p, y], [p, p, p, g, p, p], [p, p, p, g, w, p]
+    , [p, p, p, p, p, y], [p, p, p, p, p, p], [p, p, p, p, w, p]
+    , [p, p, b, p, p, y], [p, p, b, p, p, p], [p, p, b, p, w, p]
+
+    , [r, p, p, g, p, y], [r, p, p, g, p, p], [r, p, p, g, w, p]
+    , [r, p, p, p, p, y], [r, p, p, p, p, p], [r, p, p, p, w, p]
+    , [r, p, b, p, p, y], [r, p, b, p, p, p], [r, p, b, p, w, p]
+];
+
+const faceIndexes = [
+    {
+        'name': 'x-left'
+        , 'indexes': [0, 1, 2, 3, 4, 5, 6, 7, 8]
+        , 'actuals': []
+    }
+    , 
+    {
+        'name': 'x-center'
+        , 'indexes': [9, 10, 11, 12, 13, 14, 15, 16, 17]
+        , 'actuals': []
+    }
+    , 
+    {
+        'name': 'x-right'
+        , 'indexes': [18, 19, 20, 21, 22, 23, 24, 25, 26]
+        , 'actuals': []
+    }
+    , 
+    {
+        'name': 'y-bottom'
+        , 'indexes': [0, 1, 2, 9, 10, 11, 18, 19, 20]
+        , 'actuals': []
+    }
+    , 
+    {
+        'name': 'y-center'
+        , 'indexes': [3, 4, 5, 12, 13, 14, 21, 22, 23]
+        , 'actuals': []
+    }
+    , 
+    {
+        'name': 'y-top'
+        , 'indexes': [6, 7, 8, 15, 16, 17, 24, 25, 26]
+        , 'actuals': []
+    }
+    ,
+    {
+        'name': 'z-back'
+        , 'indexes': [0, 3, 6, 9, 12, 15, 18, 21, 24]
+        , 'actuals': []
+    }
+    , 
+    {
+        'name': 'z-center'
+        , 'indexes': [1, 4, 7, 10, 13, 16, 19, 22, 25]
+        , 'actuals': []
+    }
+    , 
+    {
+        'name': 'z-front'
+        , 'indexes': [2, 5, 8, 11, 14, 17, 20, 23, 26]
+        , 'actuals': []
+    }
+    ,
+    {
+        'name': 'x-all'
+        , 'indexes': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+        , 'actuals': []
+    }
+    , 
+    {
+        'name': 'y-all'
+        , 'indexes': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+        , 'actuals': []
+    }
+    , 
+    {
+        'name': 'z-all'
+        , 'indexes': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+        , 'actuals': []
+    }
+]
 
 // Create a 3x3x3 matrix of colored cubes
 const cubeSize = 1; // Size of each cube
 const spacing = 0.1; // Spacing between cubes
-const { cubes, cubeMatrix, boundingBoxes } = createCubeMatrix(cubeSize, spacing, faceColors);
+const { cubes, cubeMatrix, coords } = createCubeMatrix(cubeSize, spacing, faceColors);
 scene.add(cubeMatrix);
-const rotatorObj =  new THREE.Group();
+const rotatorObj = new THREE.Group();
 scene.add(rotatorObj);
+initializeCoords();
 
 // Position the camera
 camera.position.z = 5.5;
+camera.position.x = -3;
+camera.position.y = 2;
+camera.lookAt(0, 0, 0);
