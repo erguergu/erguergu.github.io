@@ -3,9 +3,9 @@
 let faceToRotate = 'x-left';
 let rotateDir = 1;
 let frameCount = 0;
-const framesPerStep = 6;
+let framesPerStep = 5;
 let rotCount = 0;
-let maxRots = getRandomInt(30)+30; // between 30 and 60 moves to scramble
+let maxRots = getRandomInt(30)+40; // between 30 and 60 moves to scramble
 let isScrambling = true;
 let isSolving = false;
 let isRotating = false;
@@ -482,7 +482,12 @@ function animate() {
         } else if (frameCount == framesPerStep * 2) {
             frameCount = 0;
             moveHistory.push({ faceToRotate: faceToRotate, rotateDir: rotateDir});
-            rotCount++;
+
+            if (['x-all','y-all','z-all'].filter((p) => p == faceToRotate).length == 0) {
+                // when scrambling, if we rotate the whole cube, don't count that move
+                // as part of the 30-60 scramble moves since they don't really change anything
+                rotCount++;
+            }
             if (rotCount >= maxRots) {
                 //console.log(`just hit ${maxRots}, time to solve...`);
                 isScrambling = false;
@@ -506,6 +511,7 @@ function animate() {
             rotCount++;
         }
     } else if (isInteractive) {
+        framesPerStep = 10;
         if (isRotating) {
             // do the rotation
             if (frameCount++ < framesPerStep) {
