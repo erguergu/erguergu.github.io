@@ -15,6 +15,8 @@ const rotSteps = [
     { faceToRotate: 'y-bottom', rotateDir: -1 }
     , { faceToRotate: 'x-left', rotateDir: 1 }
 ];
+const matColors = [];
+let hoverCube = null;
 let touchHappened = false;
 
 import * as THREE from 'three';
@@ -157,7 +159,9 @@ function createColoredCube(faceColors) {
     const geometry = new THREE.BoxGeometry();
 
     // Create an array to hold the materials
-    const materials = faceColors.map(color => new THREE.MeshBasicMaterial({ color }));
+    const materials = faceColors.map(color => new THREE.MeshBasicMaterial({ color }));;
+
+    matColors.push(faceColors);
 
     // Create the mesh with the geometry and materials
     const cube = new THREE.Mesh(geometry, materials);
@@ -397,10 +401,10 @@ function findFaceFromGesture() {
         // update the picking ray with the camera and pointer position
         raycaster.setFromCamera( pointer, camera );
         // calculate objects intersecting the picking ray
-        const intersects = raycaster.intersectObjects( frontCubes );
+        const intersects = raycaster.intersectObjects( cubes );
     
         if (intersects.length == 0) {
-            console.log(`findFaceFromGesture: no intersects!`);
+            //console.log(`findFaceFromGesture: no intersects!`);
             if (yDir != 0) {
                 faceToRotate = 'x-all';
                 rotateDir = yDir;
@@ -412,16 +416,17 @@ function findFaceFromGesture() {
         } else {
             console.log(`intersect`, intersects[0]);
             isRotating = true;
-            if (intersects[0].normal.x == -1 && yDir != 0) {
+            console.log(`normal`, intersects[0].normal.applyEuler( intersects[0].object.rotation));
+            //if (intersects[0].normal.x == -1 && yDir != 0) {
                 // this is a rotation on the z-front
-                faceToRotate = 'z-front';
-                rotateDir = yDir;
-            } else {
+                //faceToRotate = 'z-front';
+                //rotateDir = yDir;
+            //} else {
 
                 faceToRotate = findFaceFromMesh(intersects[0].object, xDir, yDir);
                 isRotating = true;
                 rotateDir = xDir == 0 ? yDir : xDir;
-            }
+            //}
         }
     }
     gestureData.moveStart = null;
@@ -479,7 +484,7 @@ function animate() {
             doRotate(faceToRotate, rotateDir);
         } else if (frameCount == framesPerStep + 1) {
             resetFaces();
-        } else if (frameCount == framesPerStep * 2) {
+        /*} else if (frameCount == framesPerStep * 2) {*/
             frameCount = 0;
             moveHistory.push({ faceToRotate: faceToRotate, rotateDir: rotateDir});
 
@@ -587,6 +592,57 @@ function onMouseEnd(event) {
     }
 }
 
+function onMouseMove(event) {
+    //console.log(`${event.clientX},${event.clientY}`);
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    
+	pointer.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+	pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+    // update the picking ray with the camera and pointer position
+	raycaster.setFromCamera( pointer, camera );
+
+	// calculate objects intersecting the picking ray
+	const intersects = raycaster.intersectObjects( cubes );
+
+
+    const worldVec = new THREE.Vector3();
+    const cubeWorldVec = new THREE.Vector3();
+    const hoverCubeWorldVec = new THREE.Vector3();
+    
+    // reset colors
+    if (hoverCube) {
+        hoverCube.getWorldPosition(hoverCubeWorldVec);
+        for (let i = 0; i < cubes.length; i++){
+            const cube = cubes[i];
+            cube.getWorldPosition(cubeWorldVec);
+
+            if (veq(cubeWorldVec, hoverCubeWorldVec)) {
+
+                const colors = matColors[i];
+                for (let n = 0; n < colors.length; n++) {
+                    hoverCube.material[n].color.set(colors[n]);
+                }
+                hoverCube = null;
+            }
+        }
+    }
+    
+    if (intersects.length > 0) {
+        for ( let i = 0; i < intersects.length; i ++ ) {
+            if (i > 0) break;
+
+            const inter = intersects[i];
+
+            for (let j = 0; j < inter.object.material.length; j++) {
+                inter.object.material[j].color.set( 0xff00ff );
+            }
+            hoverCube = inter.object;
+        }
+    }
+}
+
 function onTouchEnd(event) {
     touchHappened = true;
     handleMoveEnd(event.changedTouches[0].clientX, event.changedTouches[0].clientY);
@@ -600,6 +656,7 @@ window.addEventListener("touchmove", onTouchMove, { passive: false });
 window.onresize = reportWindowSize;
 window.addEventListener('mousedown', onMouseStart, false);
 window.addEventListener('mouseup', onMouseEnd, false);
+//window.addEventListener('mousemove', onMouseMove, false);
 
 initializeCoords();
 
