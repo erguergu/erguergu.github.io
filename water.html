@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>three.js webgl - shaders - ocean</title>
+		<title>Splashing Around with Water</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 		<link type="text/css" rel="stylesheet" href="main.css">
@@ -30,7 +30,7 @@
 
 			import { GUI } from 'three/addons/lil-gui.module.min.js';
 			import { OrbitControls } from 'three/addons/OrbitControls.js';
-			import { Water } from 'three/addons/Water.js';
+			import { Water } from 'three/addons/SphereWater.js';
 			import { Sky } from 'three/addons/Sky.js';
 
 			let container, stats;
@@ -38,6 +38,57 @@
 			let controls, water, sun, mesh;
 
 			init();
+
+                        
+
+            function createCubeSphereGeo() {
+
+                // Parameters for the geometry 
+                const width = 1; const height = 1; const depth = 1; 
+                const widthSegments = 5; 
+                // Number of segments along the width 
+                const heightSegments = 5; 
+                // Number of segments along the height 
+                const depthSegments = 5; 
+                // Number of segments along the depth 
+                // Desired radius of the sphere 
+                const radius = 50; 
+                // Create BoxGeometry 
+                const geometry = new THREE.BoxGeometry(width, height, depth, widthSegments, heightSegments, depthSegments); 
+                // Access the vertices through the geometry's position attribute 
+                const positionAttribute = geometry.attributes.position; 
+                // Modify vertices to make them equidistant from the center 
+                for (let i = 0; i < positionAttribute.count; i++) { 
+                    // Get vertex position 
+                    const x = positionAttribute.getX(i); const y = positionAttribute.getY(i); const z = positionAttribute.getZ(i); 
+                    // Calculate distance from the center 
+                    const length = Math.sqrt(x * x + y * y + z * z); 
+                    // Normalize and scale to the desired radius 
+                    const newX = (x / length) * radius; 
+                    const newY = (y / length) * radius; 
+                    const newZ = (z / length) * radius; 
+                    // Update vertex position 
+                    positionAttribute.setXYZ(i, newX, newY, newZ); 
+                } 
+                // Recompute normals for shading 
+                geometry.computeVertexNormals(); 
+                // Create an array of materials, one for each triangle face 
+                const numTriangles = geometry.index.count / 3; 
+                
+                // Clear any existing groups 
+                geometry.clearGroups(); 
+                // Assign a material index to each triangle face 
+                for (let i = 0; i < numTriangles; i++) { 
+                    geometry.addGroup(i * 3, 3, i); 
+                    // Each group represents one triangle, starting index `i * 3`, 3 vertices per face, and material index `i` 
+                } 
+
+                // Create a mesh with the geometry and materials 
+                //const sphereMesh = new THREE.Mesh(geometry, materials);
+                
+                return geometry;
+            }
+
 
 			function init() {
 
@@ -65,12 +116,15 @@
 				sun = new THREE.Vector3();
 
 				// Water
+                
+                const sphereGeo = createCubeSphereGeo();
 
-				const waterGeometry = new THREE.PlaneGeometry( 10000, 10000 );
+				// const waterGeometry = new THREE.PlaneGeometry( 10000, 10000 );
 
 				water = new Water(
-					waterGeometry,
+					sphereGeo,
 					{
+                        //alpha: .2,
 						textureWidth: 512,
 						textureHeight: 512,
 						waterNormals: new THREE.TextureLoader().load( 'waternormals.jpg', function ( texture ) {
@@ -86,9 +140,10 @@
 					}
 				);
 
-				water.rotation.x = - Math.PI / 2;
+				//water.rotation.x = - Math.PI / 2;
 
 				scene.add( water );
+
 
 				// Skybox
 
@@ -121,7 +176,9 @@
 					sun.setFromSphericalCoords( 1, phi, theta );
 
 					sky.material.uniforms[ 'sunPosition' ].value.copy( sun );
-					water.material.uniforms[ 'sunDirection' ].value.copy( sun ).normalize();
+                    for (let mat of water.material) {
+					    mat.uniforms[ 'sunDirection' ].value.copy( sun ).normalize();
+                    }
 
 					if ( renderTarget !== undefined ) renderTarget.dispose();
 
@@ -137,19 +194,19 @@
 
 				//
 
-				const geometry = new THREE.BoxGeometry( 30, 30, 30 );
-				const material = new THREE.MeshStandardMaterial( { roughness: 0 } );
+				// const geometry = new THREE.BoxGeometry( 30, 30, 30 );
+				// const material = new THREE.MeshStandardMaterial( { roughness: 0 } );
 
-				mesh = new THREE.Mesh( geometry, material );
-				scene.add( mesh );
+				// mesh = new THREE.Mesh( geometry, material );
+				// scene.add( mesh );
 
 				//
 
 				controls = new OrbitControls( camera, renderer.domElement );
-				controls.maxPolarAngle = Math.PI * 0.495;
+				//controls.maxPolarAngle = Math.PI * 0.495;
 				controls.target.set( 0, 10, 0 );
 				controls.minDistance = 40.0;
-				controls.maxDistance = 200.0;
+				controls.maxDistance = 2000.0;
 				controls.update();
 
 				//
@@ -166,12 +223,12 @@
 				folderSky.add( parameters, 'azimuth', - 180, 180, 0.1 ).onChange( updateSun );
 				folderSky.open();
 
-				const waterUniforms = water.material.uniforms;
+				// const waterUniforms = water.material.uniforms;
 
-				const folderWater = gui.addFolder( 'Water' );
-				folderWater.add( waterUniforms.distortionScale, 'value', 0, 8, 0.1 ).name( 'distortionScale' );
-				folderWater.add( waterUniforms.size, 'value', 0.1, 10, 0.1 ).name( 'size' );
-				folderWater.open();
+				// const folderWater = gui.addFolder( 'Water' );
+				// folderWater.add( waterUniforms.distortionScale, 'value', 0, 8, 0.1 ).name( 'distortionScale' );
+				// folderWater.add( waterUniforms.size, 'value', 0.1, 1000, 0.1 ).name( 'size' );
+				// folderWater.open();
 
 				//
 
@@ -190,6 +247,8 @@
 
 			function animate() {
 
+                //water.rotation.x += .001;
+
 				render();
 				stats.update();
 
@@ -199,11 +258,13 @@
 
 				const time = performance.now() * 0.001;
 
-				mesh.position.y = Math.sin( time ) * 20 + 5;
-				mesh.rotation.x = time * 0.5;
-				mesh.rotation.z = time * 0.51;
+				//mesh.position.y = Math.sin( time ) * 20 + 5;
+				//mesh.rotation.x = time * 0.5;
+				//mesh.rotation.z = time * 0.51;
 
-				water.material.uniforms[ 'time' ].value += 1.0 / 60.0;
+                for (let mat of water.material) {
+                    mat.uniforms[ 'time' ].value += 1.0 / 60.0;
+                }
 
 				renderer.render( scene, camera );
 
