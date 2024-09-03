@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Three.js Geometry Browser</title>
+		<link rel="shortcut icon" href="favicon.ico" />
+		<link rel="stylesheet" type="text/css" href="main.css">
+		<style>
+			canvas {
+				display: block;
+				width: 100%;
+				height: 100%;
+			}
+
+			#newWindow {
+				display: block;
+				position: absolute;
+				bottom: 0.3em;
+				left: 0.5em;
+				color: #fff;
+			}
+		</style>
+	</head>
+	<body>
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "./scripts/build/three.module.js",
+					"three/addons/": "./scripts/jsm/"
+				}
+			}
+		</script>
+
+		<script type="module">
+			import {
+				BoxGeometry,
+				BufferGeometry,
+				CapsuleGeometry,
+				CircleGeometry,
+				Color,
+				DirectionalLight,
+				DoubleSide,
+				Float32BufferAttribute,
+				Group,
+				LineSegments,
+				LineBasicMaterial,
+				Mesh,
+				MeshPhongMaterial,
+				PerspectiveCamera,
+				Scene,
+				Vector2,
+				Vector3,
+				WireframeGeometry,
+				WebGLRenderer
+			} from 'three';
+
+			import { GUI } from './scripts/jsm/lil-gui.module.min.js';
+			import { OrbitControls } from './scripts/jsm/OrbitControls.js';
+
+			const twoPi = Math.PI * 2;
+            const worldRadius = 2000;
+
+
+			function updateGroupGeometry( mesh, geometry ) {
+
+				mesh.children[ 0 ].geometry.dispose();
+				mesh.children[ 1 ].geometry.dispose();
+                  
+				mesh.children[ 0 ].geometry = new WireframeGeometry( geometry );
+				mesh.children[ 1 ].geometry = geometry;
+			}
+
+			const guis = {
+
+                BoxSphere: function ( mesh ) {
+                    const data = {
+						radius: worldRadius,
+						segments: 50
+					};
+
+					function generateGeometry() {
+
+                        const boxSphereGeo =    new BoxGeometry(
+								data.radius, data.radius, data.radius, data.segments, data.segments, data.segments
+							);   
+                        const positionAttribute = boxSphereGeo.attributes.position; 
+                        // Modify vertices to make them equidistant from the center 
+                        for (let i = 0; i < positionAttribute.count; i++) {
+                            // Get vertex position
+                            const x = positionAttribute.getX(i);
+                            const y = positionAttribute.getY(i);
+                            const z = positionAttribute.getZ(i);
+                            // Calculate distance from the center
+                            const length = Math.sqrt(x * x + y * y + z * z);
+                            // Normalize and scale to the desired radius
+                            const newX = (x / length) * data.radius;
+                            const newY = (y / length) * data.radius;
+                            const newZ = (z / length) * data.radius;
+                            // Update vertex position
+                            positionAttribute.setXYZ(i, newX, newY, newZ);
+                        } 
+                        // Recompute normals for shading
+                        boxSphereGeo.computeVertexNormals();
+
+						updateGroupGeometry( mesh, boxSphereGeo );
+
+					}
+
+					const folder = gui.addFolder( 'BoxSphere' );
+
+					folder.add( data, 'radius', 1, worldRadius ).onChange( generateGeometry );
+					folder.add( data, 'segments', 1, 100 ).step( 1 ).onChange( generateGeometry );
+
+					generateGeometry();
+
+                }
+
+			};
+
+			function chooseFromHash( mesh ) {
+
+				const selectedGeometry = window.location.hash.substring( 1 ) || 'BoxSphere';
+
+				if ( guis[ selectedGeometry ] !== undefined ) {
+
+					guis[ selectedGeometry ]( mesh );
+
+				}
+
+			}
+
+			//
+
+			const selectedGeometry = window.location.hash.substring( 1 );
+
+			if ( guis[ selectedGeometry ] !== undefined ) {
+
+				document.getElementById( 'newWindow' ).href += '#' + selectedGeometry;
+
+			}
+
+			const gui = new GUI();
+
+			const scene = new Scene();
+			scene.background = new Color( 0x444444 );
+
+			const camera = new PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1500 );
+            camera.position.y = worldRadius + 1;
+
+			const renderer = new WebGLRenderer( { antialias: true } );
+			renderer.setPixelRatio( window.devicePixelRatio );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			document.body.appendChild( renderer.domElement );
+
+			//const orbit = new OrbitControls( camera, renderer.domElement );
+
+			const lights = [];
+			lights[ 0 ] = new DirectionalLight( 0xffffff, 3 );
+			lights[ 1 ] = new DirectionalLight( 0xffffff, 3 );
+			lights[ 2 ] = new DirectionalLight( 0xffffff, 3 );
+
+			lights[ 0 ].position.set( 0, 400, 0 );
+			lights[ 1 ].position.set( 200, 400, 400 );
+			lights[ 2 ].position.set( - 200, - 400, - 200 );
+
+			scene.add( lights[ 0 ] );
+			scene.add( lights[ 1 ] );
+			scene.add( lights[ 2 ] );
+
+			const world = new Group();
+
+			const geometry = new BufferGeometry();
+			geometry.setAttribute( 'position', new Float32BufferAttribute( [], 3 ) );
+
+			const lineMaterial = new LineBasicMaterial( { color: 0xffffff, transparent: true, opacity: 0.5 } );
+			const meshMaterial = new MeshPhongMaterial( { color: 0x156289, emissive: 0x072534, side: DoubleSide, flatShading: true } );
+
+			world.add( new LineSegments( geometry, lineMaterial ) );
+			world.add( new Mesh( geometry, meshMaterial ) );
+
+			chooseFromHash( world );
+
+			scene.add( world );
+
+            const rotationSpeed = 0.00005;
+            const upVector = new Vector3(0, 1, 0);
+            const cameraDirection = new Vector3();
+			function render() {
+
+				requestAnimationFrame( render );
+
+				//world.rotation.x += 0.00005;
+                camera.rotation.y += dirRotate * 0.05;
+                // Get the camera's forward direction in world space
+                camera.getWorldDirection(cameraDirection);
+                const rotationAxis = new Vector3().crossVectors(cameraDirection, upVector).normalize();
+                world.rotateOnWorldAxis(rotationAxis, rotationSpeed * dirMove);
+
+				renderer.render( scene, camera );
+
+			}
+
+			window.addEventListener( 'resize', function () {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}, false );
+
+            let dirRotate = 0;
+            let dirMove = 1;
+            window.addEventListener( 'keydown', function( e ) {
+                if (e.code == 'ArrowLeft') {
+                    dirRotate = 1;
+                } else if (e.code == 'ArrowRight') {
+                    dirRotate = -1;
+                } else if (e.code == 'ArrowUp') {
+                    dirMove = 1;
+                } else if (e.code == 'ArrowDown') {
+                    dirMove = -1;
+                }
+            });
+            window.addEventListener( 'keyup', function( e ) {
+                if (e.code == 'ArrowLeft' || e.code == 'ArrowRight') {
+                    dirRotate = 0;
+                } else if (e.code == 'ArrowUp' || e.code == 'ArrowDown') {
+                    dirMove = 0;
+                }
+            });
+
+			render();
+
+		</script>
+	</body>
+</html>

@@ -33,9 +33,11 @@
 			import { Water } from 'three/addons/SphereWater.js';
 			import { Sky } from 'three/addons/Sky.js';
 
-			let container, stats;
+			let container, stats, mirrorSphere;
 			let camera, scene, renderer;
 			let controls, water, sun, mesh;
+
+            let reflectiveSphere, cubeCamera, mirrorSphereCamera;
 
 			init();
 
@@ -45,14 +47,14 @@
 
                 // Parameters for the geometry 
                 const width = 1; const height = 1; const depth = 1; 
-                const widthSegments = 5; 
+                const widthSegments = 8; 
                 // Number of segments along the width 
-                const heightSegments = 5; 
+                const heightSegments = 8; 
                 // Number of segments along the height 
-                const depthSegments = 5; 
+                const depthSegments = 8; 
                 // Number of segments along the depth 
                 // Desired radius of the sphere 
-                const radius = 50; 
+                const radius = 10; 
                 // Create BoxGeometry 
                 const geometry = new THREE.BoxGeometry(width, height, depth, widthSegments, heightSegments, depthSegments); 
                 // Access the vertices through the geometry's position attribute 
@@ -72,19 +74,6 @@
                 } 
                 // Recompute normals for shading 
                 geometry.computeVertexNormals(); 
-                // Create an array of materials, one for each triangle face 
-                const numTriangles = geometry.index.count / 3; 
-                
-                // Clear any existing groups 
-                geometry.clearGroups(); 
-                // Assign a material index to each triangle face 
-                for (let i = 0; i < numTriangles; i++) { 
-                    geometry.addGroup(i * 3, 3, i); 
-                    // Each group represents one triangle, starting index `i * 3`, 3 vertices per face, and material index `i` 
-                } 
-
-                // Create a mesh with the geometry and materials 
-                //const sphereMesh = new THREE.Mesh(geometry, materials);
                 
                 return geometry;
             }
@@ -145,6 +134,106 @@
 				scene.add( water );
 
 
+
+
+// CubeCamera setup
+const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(512, {
+    format: THREE.RGBAFormat,
+    generateMipmaps: true,
+    minFilter: THREE.LinearMipmapLinearFilter,
+});
+cubeCamera = new THREE.CubeCamera(5, 1000, cubeRenderTarget);
+scene.add(cubeCamera);
+                // Custom ShaderMaterial for reflective sphere
+const reflectiveMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+        envMap: { value: cubeRenderTarget.texture }, // Use the texture from CubeCamera
+        cameraPosition: { value: camera.position },
+    },
+    vertexShader: `
+        varying vec3 vReflect;
+        varying vec3 vNormal;
+        varying vec3 vPosition;
+        void main() {
+            vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+            vec3 cameraToVertex = normalize(worldPosition.xyz - cameraPosition);
+            vReflect = reflect(cameraToVertex, normalize(normalMatrix * normal));
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            vNormal = normalize(mat3(modelMatrix) * normal);
+            vPosition = vec3(modelViewMatrix * vec4(position, 1.0));
+        }
+    `,
+    fragmentShader: `
+            uniform vec3 lightPosition;     // Position of the light source
+            uniform vec3 ambientColor;      // Ambient light color
+            uniform vec3 diffuseColor;      // Diffuse light color
+            uniform vec3 specularColor;     // Specular light color
+            uniform float shininess;        // Shininess factor for specular highlights
+            uniform samplerCube envMap;
+
+            varying vec3 vReflect;
+            varying vec3 vNormal;           // Interpolated normal vector in camera space
+            varying vec3 vPosition;         // Interpolated fragment position in camera space
+            void main() {
+            // Normalize interpolated normal to ensure proper lighting calculations
+            vec3 normal = normalize(vNormal);
+
+            // Calculate light direction (from fragment to light source)
+            vec3 lightDir = normalize(lightPosition - vPosition);
+
+            // Calculate view direction (from fragment to camera)
+            vec3 viewDir = normalize(cameraPosition - vPosition);
+
+            // Ambient component remains constant across all surfaces
+            vec3 ambient = ambientColor;
+
+            // Diffuse component calculation (only if facing the light source)
+            float diff = max(dot(normal, lightDir), 0.0);
+            vec3 diffuse = diffuseColor * diff;
+
+            // Specular component calculation (only if facing the light source)
+            vec3 specular = vec3(0.0);
+            if (diff > 0.0) {
+                // Reflect the light direction around the normal
+                vec3 reflectDir = reflect(-lightDir, normal);
+                
+                // Calculate specular factor based on view direction and reflection direction
+                float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+                specular = specularColor * spec;
+            }
+            // Combine ambient, diffuse, and specular components for final color
+            vec3 finalColor = ambient + diffuse + specular;
+
+
+            vec4 envColor = textureCube(envMap, vReflect);
+            gl_FragColor = envColor; // Reflective color
+        }
+    `,
+});
+// Create a reflective sphere using the custom material
+const sphereGeometry = new THREE.SphereGeometry(30, 32, 32);
+reflectiveSphere = new THREE.Mesh(sphereGeometry, reflectiveMaterial);
+cubeCamera.position.set( -30, 0, 0 );
+reflectiveSphere.position.set( -30, 0, 0 );
+scene.add(reflectiveSphere);
+
+
+// const cubeRenderTarget2 = new THREE.WebGLCubeRenderTarget(512, {
+//     format: THREE.RGBAFormat,
+//     generateMipmaps: true,
+//     minFilter: THREE.LinearMipmapLinearFilter,
+// });
+// var sphereGeom =  new THREE.SphereGeometry( 50, 32, 16 ); // radius, segmentsWidth, segmentsHeight
+// 	mirrorSphereCamera = new THREE.CubeCamera( 0.1, 5000, cubeRenderTarget2 );
+// 	scene.add( mirrorSphereCamera );
+// 	var mirrorSphereMaterial = new THREE.MeshBasicMaterial( { envMap: mirrorSphereCamera.renderTarget } );
+// 	mirrorSphere = new THREE.Mesh( sphereGeom, mirrorSphereMaterial );
+// 	mirrorSphere.position.set(75,50,0);
+// 	mirrorSphereCamera.position.set(75,50,0);
+// 	scene.add(mirrorSphere);
+
+
+
 				// Skybox
 
 				const sky = new Sky();
@@ -176,9 +265,7 @@
 					sun.setFromSphericalCoords( 1, phi, theta );
 
 					sky.material.uniforms[ 'sunPosition' ].value.copy( sun );
-                    for (let mat of water.material) {
-					    mat.uniforms[ 'sunDirection' ].value.copy( sun ).normalize();
-                    }
+                    //water.material.uniforms[ 'sunDirection' ].value.copy( sun ).normalize();
 
 					if ( renderTarget !== undefined ) renderTarget.dispose();
 
@@ -227,7 +314,7 @@
 
 				// const folderWater = gui.addFolder( 'Water' );
 				// folderWater.add( waterUniforms.distortionScale, 'value', 0, 8, 0.1 ).name( 'distortionScale' );
-				// folderWater.add( waterUniforms.size, 'value', 0.1, 1000, 0.1 ).name( 'size' );
+				// folderWater.add( waterUniforms.size, 'value', 0.0001, 1000, 0.1 ).name( 'size' );
 				// folderWater.open();
 
 				//
@@ -258,13 +345,21 @@
 
 				const time = performance.now() * 0.001;
 
-				//mesh.position.y = Math.sin( time ) * 20 + 5;
-				//mesh.rotation.x = time * 0.5;
-				//mesh.rotation.z = time * 0.51;
+                reflectiveSphere.visible = false;
+                //mirrorSphere.visible = false;
 
-                for (let mat of water.material) {
-                    mat.uniforms[ 'time' ].value += 1.0 / 60.0;
-                }
+                cubeCamera.update(renderer, scene);                
+                //mirrorSphereCamera.update( renderer, scene );
+
+                reflectiveSphere.visible = true;
+                //mirrorSphere.visible = true;
+
+
+//mesh.position.y = Math.sin( time ) * 20 + 5;
+//mesh.rotation.x = time * 0.5;
+//mesh.rotation.z = time * 0.51;
+
+//water.material.uniforms[ 'time' ].value += 1.0 / 60.0;
 
 				renderer.render( scene, camera );
 
