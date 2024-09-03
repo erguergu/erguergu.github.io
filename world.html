@@ -60,6 +60,27 @@
 			const twoPi = Math.PI * 2;
             const worldRadius = 2000;
 
+            function calculateSphericalCoordinatesOfNorthPole(sphere) {
+                // Create a vector representing the north pole in local coordinates
+                const localNorthPole = new Vector3(0, 1, 0);
+
+                // Apply the sphere's world rotation to the local north pole vector
+                const worldNorthPole = localNorthPole.clone().applyQuaternion(sphere.quaternion);
+
+                // Now worldNorthPole contains the north pole position in world coordinates
+
+                // Calculate radial distance from origin (r)
+                const r = worldNorthPole.length();
+
+                // Calculate theta (polar angle) - angle from the positive y-axis
+                const theta = Math.acos(worldNorthPole.y / r);
+
+                // Calculate phi (azimuthal angle) - angle around the y-axis from the positive z-axis
+                const phi = Math.atan2(worldNorthPole.x, worldNorthPole.z);
+
+                return { theta, phi };
+            }
+
 
 			function updateGroupGeometry( mesh, geometry ) {
 
@@ -185,6 +206,7 @@
             const rotationSpeed = 0.00005;
             const upVector = new Vector3(0, 1, 0);
             const cameraDirection = new Vector3();
+            let frameCount = 0;
 			function render() {
 
 				requestAnimationFrame( render );
@@ -195,6 +217,12 @@
                 camera.getWorldDirection(cameraDirection);
                 const rotationAxis = new Vector3().crossVectors(cameraDirection, upVector).normalize();
                 world.rotateOnWorldAxis(rotationAxis, rotationSpeed * dirMove);
+
+                if (frameCount++ == 60) {
+                    frameCount = 0;
+                    //const sphericalCoords = calculateSphericalCoordinatesOfNorthPole(world);
+                    //console.log(`Theta: ${sphericalCoords.theta}, Phi: ${sphericalCoords.phi}`);
+                }
 
 				renderer.render( scene, camera );
 
