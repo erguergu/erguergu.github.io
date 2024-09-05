@@ -20,7 +20,7 @@ import {
  * http://29a.ch/ && http://29a.ch/slides/2012/webglwater/ : Water shader explanations in WebGL
  */
 
-class Water extends Mesh {
+class SphereWaterMult extends Mesh {
 
 	constructor( geometry, options = {} ) {
 
@@ -53,6 +53,23 @@ class Water extends Mesh {
         const numTriangles = geometry.index.count / 3; 
         // Number of triangles 
         const materials = []; 
+        const waterUniforms = UniformsUtils.merge( [
+            UniformsLib[ 'fog' ],
+            UniformsLib[ 'lights' ],
+            {
+                'normalSampler': { value: null },
+                'mirrorSampler': { value: null },
+                'alpha': { value: 1.0 },
+                'time': { value: 0.0 },
+                'size': { value: 1000.0 },
+                'distortionScale': { value: 20.0 },
+                'textureMatrix': { value: new Matrix4() },
+                'sunColor': { value: new Color( 0x7F7F7F ) },
+                'sunDirection': { value: new Vector3( 0.70707, 0.70707, 0 ) },
+                'eye': { value: new Vector3() },
+                'waterColor': { value: new Color( 0x555555 ) }
+            }
+        ] );
         console.log(`There are ${numTriangles} triangles. We have to create a material and camera for each.`);
         for (let i = 0; i < numTriangles; i++) { 
 
@@ -78,23 +95,7 @@ class Water extends Mesh {
 
                 name: 'MirrorShader',
 
-                uniforms: UniformsUtils.merge( [
-                    UniformsLib[ 'fog' ],
-                    UniformsLib[ 'lights' ],
-                    {
-                        'normalSampler': { value: null },
-                        'mirrorSampler': { value: null },
-                        'alpha': { value: 1.0 },
-                        'time': { value: 0.0 },
-                        'size': { value: 1000.0 },
-                        'distortionScale': { value: 20.0 },
-                        'textureMatrix': { value: new Matrix4() },
-                        'sunColor': { value: new Color( 0x7F7F7F ) },
-                        'sunDirection': { value: new Vector3( 0.70707, 0.70707, 0 ) },
-                        'eye': { value: new Vector3() },
-                        'waterColor': { value: new Color( 0x555555 ) }
-                    }
-                ] ),
+                uniforms: waterUniforms,
 
                 vertexShader: /* glsl */`
                     uniform mat4 textureMatrix;
@@ -140,15 +141,30 @@ class Water extends Mesh {
                     varying vec4 worldPosition;
                     varying vec2 vUv;
 
-                    vec4 getNoise( vec2 uv ) {
-                        vec2 uv0 = ( uv / 103.0 ) + vec2(time / 17.0, time / 29.0);
-                        vec2 uv1 = uv / 107.0-vec2( time / -19.0, time / 31.0 );
-                        vec2 uv2 = uv / vec2( 8907.0, 9803.0 ) + vec2( time / 101.0, time / 97.0 );
-                        vec2 uv3 = uv / vec2( 1091.0, 1027.0 ) - vec2( time / 109.0, time / -113.0 );
-                        vec4 noise = texture2D( normalSampler, uv0 ) +
-                            texture2D( normalSampler, uv1 ) +
-                            texture2D( normalSampler, uv2 ) +
-                            texture2D( normalSampler, uv3 );
+                    // vec4 getNoise( vec2 uv ) {
+                    //     vec2 uv0 = ( uv / 103.0 ) + vec2(time / 17.0, time / 29.0);
+                    //     vec2 uv1 = uv / 107.0-vec2( time / -19.0, time / 31.0 );
+                    //     vec2 uv2 = uv / vec2( 8907.0, 9803.0 ) + vec2( time / 101.0, time / 97.0 );
+                    //     vec2 uv3 = uv / vec2( 1091.0, 1027.0 ) - vec2( time / 109.0, time / -113.0 );
+                    //     vec4 noise = texture2D( normalSampler, uv0 ) +
+                    //         texture2D( normalSampler, uv1 ) +
+                    //         texture2D( normalSampler, uv2 ) +
+                    //         texture2D( normalSampler, uv3 );
+                    //     return noise * 0.5 - 1.0;
+                    // }
+                    vec4 getNoise(vec3 position) {
+                        // Incorporate 'z' in a way that avoids zeroing out the noise
+                        vec2 uv0 = (position.xy + vec2(position.z + 0.1)) / 103.0 + vec2(time / 17.0, time / 29.0);
+                        vec2 uv1 = (position.xy + vec2(position.z + 0.1)) / 107.0 - vec2(time / -19.0, time / 31.0);
+                        vec2 uv2 = (position.xy + vec2(position.z + 0.1)) / vec2(8907.0, 9803.0) + vec2(time / 101.0, time / 97.0);
+                        vec2 uv3 = (position.xy + vec2(position.z + 0.1)) / vec2(1091.0, 1027.0) - vec2(time / 109.0, time / -113.0);
+
+                        // Sample the 2D noise texture using the modified UV coordinates
+                        vec4 noise = texture2D(normalSampler, uv0) +
+                                    texture2D(normalSampler, uv1) +
+                                    texture2D(normalSampler, uv2) +
+                                    texture2D(normalSampler, uv3);
+
                         return noise * 0.5 - 1.0;
                     }
 
@@ -171,8 +187,8 @@ class Water extends Mesh {
                     void main() {
 
                         #include <logdepthbuf_fragment>
-                        //vec4 noise = getNoise( worldPosition.xz * size );
-                        vec4 noise = getNoise( vUv * size );
+                        vec4 noise = getNoise( worldPosition.xzy * size );
+                        //vec4 noise = getNoise( vUv * size );
                         vec3 surfaceNormal = normalize( noise.xzy * vec3( 1.5, 1.0, 1.5 ) );
 
                         vec3 diffuseLight = vec3(0.0);
@@ -233,10 +249,18 @@ class Water extends Mesh {
                 // to do that we first get the average of the three vertexes for this triangle.
                 const pos = geometry.getAttribute('position').array;
                             
-                const posX = pos[i * 3]; 
-                const posY = pos[i * 3 + 1]; 
-                const posZ = pos[i * 3 + 2]; 
-                const v1 = new Vector3(posX,posY,posZ);
+                const posX1 = pos[i * 3]; 
+                const posY1 = pos[i * 3 + 1]; 
+                const posZ1 = pos[i * 3 + 2]; 
+                const posX2 = pos[2*i * 3]; 
+                const posY2 = pos[2*i * 3 + 1]; 
+                const posZ2 = pos[2*i * 3 + 2]; 
+                const posX3 = pos[3*i * 3]; 
+                const posY3 = pos[3*i * 3 + 1]; 
+                const posZ3 = pos[3*i * 3 + 2]; 
+                const v1 = new Vector3(posX1,posY1,posZ1);
+                const v2 = new Vector3(posX2,posY2,posZ2);
+                const v3 = new Vector3(posX3,posY3,posZ3);
                 // positionAttribute.getX(index)
                 const posCenter = new THREE.vector3().add(v1).add(v2).add(v3).divideScalar(3);
 
@@ -363,7 +387,7 @@ class Water extends Mesh {
 		scope.onBeforeRender = function ( renderer, scene, camera ) {
 
             for (let onBefore of onBeforeRenders) {
-                //onBefore( renderer, scene, camera );
+                onBefore( renderer, scene, camera );
             }
 
         };
@@ -389,4 +413,4 @@ function getNormal(geometry, vertexIndex) {
     return normal;
 }
 
-export { Water };
+export { SphereWaterMult };

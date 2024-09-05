@@ -30,7 +30,7 @@
 
 			import { GUI } from 'three/addons/lil-gui.module.min.js';
 			import { OrbitControls } from 'three/addons/OrbitControls.js';
-			import { Water } from 'three/addons/Water3d.js';
+			import { SphereWaterMult } from 'three/addons/SphereWaterMult.js';
 			import { Sky } from 'three/addons/Sky.js';
 
 			let container, stats;
@@ -68,7 +68,7 @@
 
 				const waterGeometry = new THREE.PlaneGeometry( 10000, 10000 );
 
-				water = new Water(
+				water = new SphereWaterMult(
 					waterGeometry,
 					{
 						textureWidth: 512,
@@ -80,13 +80,13 @@
 						} ),
 						sunDirection: new THREE.Vector3(),
 						sunColor: 0xffffff,
-						waterColor: 0x001e0f,
+						waterColor: 0x000f1e,
 						distortionScale: 3.7,
 						fog: scene.fog !== undefined
 					}
 				);
 
-				//water.rotation.x = - Math.PI / 2;
+				water.rotation.x = - Math.PI / 2;
 
 				scene.add( water );
 
@@ -121,7 +121,9 @@
 					sun.setFromSphericalCoords( 1, phi, theta );
 
 					sky.material.uniforms[ 'sunPosition' ].value.copy( sun );
-					water.material.uniforms[ 'sunDirection' ].value.copy( sun ).normalize();
+                    for (let i = 0; i < water.material.length; i++) {
+					    water.material[i].uniforms[ 'sunDirection' ].value.copy( sun ).normalize();
+                    }
 
 					if ( renderTarget !== undefined ) renderTarget.dispose();
 
@@ -166,7 +168,7 @@
 				folderSky.add( parameters, 'azimuth', - 180, 180, 0.1 ).onChange( updateSun );
 				folderSky.open();
 
-				const waterUniforms = water.material.uniforms;
+				const waterUniforms = water.material[0].uniforms;
 
 				const folderWater = gui.addFolder( 'Water' );
 				folderWater.add( waterUniforms.distortionScale, 'value', 0, 8, 0.1 ).name( 'distortionScale' );
@@ -203,7 +205,10 @@
 				mesh.rotation.x = time * 0.5;
 				mesh.rotation.z = time * 0.51;
 
-				water.material.uniforms[ 'time' ].value += 1.0 / 60.0;
+				//water.material.uniforms[ 'time' ].value += 1.0 / 60.0;
+                for (let i = 0; i < water.material.length; i++) {
+                    water.material[i].uniforms[ 'time' ].value += 1.0 / 60.0;
+                }
 
 				renderer.render( scene, camera );
 

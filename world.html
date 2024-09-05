@@ -2,7 +2,7 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8">
-		<title>Three.js Geometry Browser</title>
+		<title>The Sea</title>
 		<link rel="shortcut icon" href="favicon.ico" />
 		<link rel="stylesheet" type="text/css" href="main.css">
 		<style>
@@ -34,6 +34,7 @@
 		<script type="module">
 			import {
 				BoxGeometry,
+                BufferAttribute,
 				BufferGeometry,
 				CapsuleGeometry,
 				CircleGeometry,
@@ -45,9 +46,14 @@
 				LineSegments,
 				LineBasicMaterial,
 				Mesh,
+                MeshBasicMaterial,
 				MeshPhongMaterial,
 				PerspectiveCamera,
+                PlaneGeometry,
+                RepeatWrapping,
 				Scene,
+                SphereGeometry,
+                TextureLoader,
 				Vector2,
 				Vector3,
 				WireframeGeometry,
@@ -56,9 +62,151 @@
 
 			import { GUI } from './scripts/jsm/lil-gui.module.min.js';
 			import { OrbitControls } from './scripts/jsm/OrbitControls.js';
+			import { Water } from 'three/addons/Water3d.js';
 
 			const twoPi = Math.PI * 2;
             const worldRadius = 2000;
+
+            let vertDist = 80;
+            let onlyOnce = true;
+            function getNearbyTriangles( ) {
+                const mesh = world.children[ 1 ];
+
+                // // Access the position attribute (vertices)
+                // const position = geometry.attributes.position;
+                // const vertexCount = position.count;
+
+                const positionAttribute = mesh.geometry.attributes.position;
+                const indexAttr = mesh.geometry.index.array;
+                const vertexCount = indexAttr.length;
+
+                if (onlyOnce) {
+                    console.log(`positionAttribute`, positionAttribute);
+                }
+                const camWorld = new Vector3();
+                camera.getWorldPosition(camWorld);
+                const maxDist = vertDist;
+
+                // loop through all the triangles in the sphere
+                let t = 0;
+	            for (let v = 0; v < vertexCount; v += 3) {
+                    let isMatch = false;
+                    let triangle = { index: t, verts: [], needsCreate: true, needsRemove: false, mesh: null, marker: null };
+
+                    if (t > 1) {    
+                        onlyOnce = false;
+                    }
+                    const v1 = new Vector3().fromBufferAttribute(positionAttribute, indexAttr[v]);
+                    const wv1 = v1;
+                    mesh.localToWorld(wv1);
+                    triangle.verts.push(wv1);
+                    if ( Math.abs(camWorld.distanceTo(wv1)) < maxDist ) {
+                        isMatch = true;
+                    }
+
+                    const v2 = new Vector3().fromBufferAttribute(positionAttribute, indexAttr[v+1]);
+                    const wv2 = v2;
+                    mesh.localToWorld(wv2);
+                    triangle.verts.push(wv2);
+                    if ( Math.abs(camWorld.distanceTo(wv2)) < maxDist ) {
+                        isMatch = true;
+                    }
+
+                    const v3 = new Vector3().fromBufferAttribute(positionAttribute, indexAttr[v+2]);
+                    const wv3 = v3;
+                    mesh.localToWorld(wv3);
+                    triangle.verts.push(wv3);
+                    if ( Math.abs(camWorld.distanceTo(wv3)) < maxDist ) {
+                        isMatch = true;
+                    }
+
+                    // at this point, we have created vector3s for v to v+2, and added them
+                    // to a triangle. we inspected each vertex and looked at its distance
+                    // to the camera, if it's close, we set isMatch to true.
+                    // Now, we will loop through the existing nearbytriangles array and
+                    // see if any 
+                    let alreadyNear = false;
+                    for (let i = 0; i < nearbyTriangles.length; i++) {
+                        const nearTri = nearbyTriangles[i];
+                        if (nearTri.index == triangle.index) {
+                            if (isMatch) {
+                                // the triangle is nearby, but it's already
+                                // in the nearbytriangles array
+                                alreadyNear = true;
+                            } else {    
+                                // the triangle is in the nearbyTriangles array but
+                                // it is no longer near.
+                                nearTri.needsRemove = true;
+                            }
+                        }
+                    }
+                    if (isMatch && !alreadyNear) {
+                        // add this triangle to the arrray if it's not already in it.
+                        nearbyTriangles.push(triangle);
+                    }
+                    t++;
+                }
+
+                for (let i = nearbyTriangles.length - 1; i >= 0; i--) {
+                    const tri = nearbyTriangles[i];
+                    if (tri.needsRemove) {
+                        nearbyTriangles.splice(i, 1);
+                        removeTriangle(tri);
+                    } else if (tri.needsCreate) {
+                        drawTriangle(tri);
+                    }
+                }
+
+                console.log(`Nearby triangles: ${nearbyTriangles.length}`);
+            }
+
+            function drawTriangle ( triangle ) {
+
+                const v0 = triangle.verts[0];
+                const v1 = triangle.verts[1];
+                const v2 = triangle.verts[2];
+
+                const avg = new Vector3();
+                avg.add(v0);
+                avg.add(v1);
+                avg.add(v2);
+                avg.divideScalar(3);
+                const markerGeo = new SphereGeometry( 1, 8, 8 ); 
+                const markerMat = new MeshBasicMaterial( { color: 0xff0000 } ); 
+                const marker = new Mesh( markerGeo, markerMat ); 
+                marker.position.set(avg.x, avg.y, avg.z);
+                world.attach( marker );
+                triangle.marker = marker;
+
+                const geometry = new BufferGeometry();
+
+                // create a simple triangle shape.
+                const vertices = new Float32Array( [
+                    v0.x, v0.y, v0.z, // v0
+                    v1.x, v1.y, v1.z, // v1
+                    v2.x, v2.y, v2.z, // v2
+                ] );
+
+                // need to set normals here
+
+                // itemSize = 3 because there are 3 values (components) per vertex
+                geometry.setAttribute( 'position', new BufferAttribute( vertices, 3 ) );
+                const material = new MeshPhongMaterial( { color: 0x156289, emissive: 0x072534, side: DoubleSide, flatShading: true } );
+                const mesh = new Mesh( geometry, material );
+
+                world.attach( mesh );
+                triangle.mesh = mesh;
+                triangle.needsCreate = false;
+            }
+
+            function removeTriangle ( triangle ) {
+                triangle.mesh.geometry.dispose();
+                triangle.mesh.material.dispose();
+                triangle.marker.geometry.dispose();
+                triangle.marker.material.dispose();
+                triangle.mesh.removeFromParent();
+                triangle.marker.removeFromParent();
+            }
 
             function calculateSphericalCoordinatesOfNorthPole(sphere) {
                 // Create a vector representing the north pole in local coordinates
@@ -89,6 +237,17 @@
                   
 				mesh.children[ 0 ].geometry = new WireframeGeometry( geometry );
 				mesh.children[ 1 ].geometry = geometry;
+
+                for (let i = nearbyTriangles.length - 1; i >= 0; i--) {
+                    const tri = nearbyTriangles[i];
+                    nearbyTriangles.splice(i);
+                    removeTriangle(tri);
+                }
+
+
+                console.log(`before - world children: ${world.children.length}`);
+                getNearbyTriangles( );
+                console.log(`after - world children: ${world.children.length}`);
 			}
 
 			const guis = {
@@ -96,11 +255,13 @@
                 BoxSphere: function ( mesh ) {
                     const data = {
 						radius: worldRadius,
-						segments: 50
+						segments: 30,
+                        distance: 120
 					};
 
 					function generateGeometry() {
 
+                        vertDist = data.distance;
                         const boxSphereGeo =    new BoxGeometry(
 								data.radius, data.radius, data.radius, data.segments, data.segments, data.segments
 							);   
@@ -123,6 +284,10 @@
                         // Recompute normals for shading
                         boxSphereGeo.computeVertexNormals();
 
+                        
+	                    const numTriangles = boxSphereGeo.index.count / 3; 
+                        console.log(`This geometry has ${numTriangles} triangles.`);
+
 						updateGroupGeometry( mesh, boxSphereGeo );
 
 					}
@@ -130,7 +295,8 @@
 					const folder = gui.addFolder( 'BoxSphere' );
 
 					folder.add( data, 'radius', 1, worldRadius ).onChange( generateGeometry );
-					folder.add( data, 'segments', 1, 100 ).step( 1 ).onChange( generateGeometry );
+					folder.add( data, 'segments', 1, 200 ).step( 1 ).onChange( generateGeometry );
+					folder.add( data, 'distance', 1, 2000 ).step( 1 ).onChange( generateGeometry );
 
 					generateGeometry();
 
@@ -150,7 +316,36 @@
 
 			}
 
-			//
+			function createWater ( ) {
+                const waterGeometry = new PlaneGeometry( 10000, 10000 );
+                let water = new Water(
+                    waterGeometry,
+                    {
+                        textureWidth: 512,
+                        textureHeight: 512,
+                        waterNormals: new TextureLoader().load( 'waternormals.jpg', function ( texture ) {
+                            texture.wrapS = texture.wrapT = RepeatWrapping;
+                        } ),
+                        sunDirection: lights[ 0 ].position.clone().normalize(),
+                        sunColor: 0xffffff,
+                        waterColor: 0x000f1e,
+                        distortionScale: 3.7,
+                        size: 4.2,
+                        fog: scene.fog !== undefined
+                    }
+                );
+                water.rotation.x = - Math.PI / 2;
+                water.position.y = worldRadius;
+                scene.add( water );
+            
+                const waterUniforms = water.material.uniforms;
+                const folderWater = gui.addFolder( 'Water' );
+                folderWater.add( waterUniforms.distortionScale, 'value', 0, 8, 0.1 ).name( 'distortionScale' );
+                folderWater.add( waterUniforms.size, 'value', 0.1, 10, 0.1 ).name( 'size' );
+                folderWater.open();
+
+                return water;
+            }
 
 			const selectedGeometry = window.location.hash.substring( 1 );
 
@@ -163,7 +358,7 @@
 			const gui = new GUI();
 
 			const scene = new Scene();
-			scene.background = new Color( 0x444444 );
+			scene.background = new Color( 0x4444ff );
 
 			const camera = new PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1500 );
             camera.position.y = worldRadius + 1;
@@ -177,18 +372,22 @@
 
 			const lights = [];
 			lights[ 0 ] = new DirectionalLight( 0xffffff, 3 );
-			lights[ 1 ] = new DirectionalLight( 0xffffff, 3 );
-			lights[ 2 ] = new DirectionalLight( 0xffffff, 3 );
+			//lights[ 1 ] = new DirectionalLight( 0xffffff, 3 );
+			//lights[ 2 ] = new DirectionalLight( 0xffffff, 3 );
 
-			lights[ 0 ].position.set( 0, 400, 0 );
-			lights[ 1 ].position.set( 200, 400, 400 );
-			lights[ 2 ].position.set( - 200, - 400, - 200 );
+			lights[ 0 ].position.set( 200, worldRadius+40, 400 );
+			//lights[ 1 ].position.set( 200, 400, 400 );
+			//lights[ 2 ].position.set( - 200, - 400, - 200 );
 
 			scene.add( lights[ 0 ] );
-			scene.add( lights[ 1 ] );
-			scene.add( lights[ 2 ] );
+			//scene.add( lights[ 1 ] );
+			//scene.add( lights[ 2 ] );
+
+
+            //let water = createWater();
 
 			const world = new Group();
+            let nearbyTriangles = [];
 
 			const geometry = new BufferGeometry();
 			geometry.setAttribute( 'position', new Float32BufferAttribute( [], 3 ) );
@@ -198,6 +397,7 @@
 
 			world.add( new LineSegments( geometry, lineMaterial ) );
 			world.add( new Mesh( geometry, meshMaterial ) );
+            world.children[ 1 ].visible = false;
 
 			chooseFromHash( world );
 
@@ -206,23 +406,39 @@
             const rotationSpeed = 0.00005;
             const upVector = new Vector3(0, 1, 0);
             const cameraDirection = new Vector3();
-            let frameCount = 0;
+            let frameCount = -1;
 			function render() {
+
+                if (frameCount == -1) {
+                    // okay gotta do some experimenting here because clearly I don't know what I'm doing
+                    console.log(`world`, world.children[1]);
+                }
 
 				requestAnimationFrame( render );
 
-				//world.rotation.x += 0.00005;
+				// Turn the camera if the user is turning:
                 camera.rotation.y += dirRotate * 0.05;
+
                 // Get the camera's forward direction in world space
                 camera.getWorldDirection(cameraDirection);
+
+                // Calculate the 'x' axis relative to the camera 'motion'
                 const rotationAxis = new Vector3().crossVectors(cameraDirection, upVector).normalize();
+
+                // Rotate the 'world' under the camera to give the impression of the
+                // camera moving around the surface of the world.
                 world.rotateOnWorldAxis(rotationAxis, rotationSpeed * dirMove);
 
                 if (frameCount++ == 60) {
                     frameCount = 0;
-                    //const sphericalCoords = calculateSphericalCoordinatesOfNorthPole(world);
-                    //console.log(`Theta: ${sphericalCoords.theta}, Phi: ${sphericalCoords.phi}`);
+
+                    if (dirMove != 0) {
+                        //console.log(`Theta: ${sphericalCoords.theta}, Phi: ${sphericalCoords.phi}`);
+                        getNearbyTriangles();
+                    }
                 }
+
+                // water.material.uniforms[ 'time' ].value += 1.0 / 60.0;
 
 				renderer.render( scene, camera );
 

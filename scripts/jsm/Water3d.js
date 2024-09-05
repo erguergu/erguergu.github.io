@@ -45,8 +45,6 @@ class Water extends Mesh {
 		const side = options.side !== undefined ? options.side : FrontSide;
 		const fog = options.fog !== undefined ? options.fog : false;
 
-		//
-
 		const mirrorPlane = new Plane();
 		const normal = new Vector3();
 		const mirrorWorldPosition = new Vector3();
@@ -77,6 +75,8 @@ class Water extends Mesh {
 					'mirrorSampler': { value: null },
 					'alpha': { value: 1.0 },
 					'time': { value: 0.0 },
+					'theta': { value: 0.0 },
+					'phi': { value: 0.0 },
 					'size': { value: 1.0 },
 					'distortionScale': { value: 20.0 },
 					'textureMatrix': { value: new Matrix4() },
@@ -127,31 +127,6 @@ class Water extends Mesh {
 
 				varying vec4 mirrorCoord;
 				varying vec4 worldPosition;
-
-				// vec4 getNoise(vec3 position) {
-				// 	// Use all three coordinates (x, y, z) to compute new 3D UV coordinates
-				// 	vec3 uv0 = (position / 103.0) + vec3(time / 17.0, time / 29.0, time / 37.0);
-				// 	vec3 uv1 = position / 107.0 - vec3(time / -19.0, time / 31.0, time / 41.0);
-				// 	vec3 uv2 = position / vec3(8907.0, 9803.0, 10247.0) + vec3(time / 101.0, time / 97.0, time / 89.0);
-				// 	vec3 uv3 = position / vec3(1091.0, 1027.0, 997.0) - vec3(time / 109.0, time / -113.0, time / 127.0);
-
-				// 	// For noise generation, we can use 2D slices of the 3D UV coordinates
-				// 	// Here we combine different 2D slices to get a 3D-like noise effect
-				// 	vec4 noise = texture2D(normalSampler, uv0.xy) +
-				// 				texture2D(normalSampler, uv1.yz) +
-				// 				texture2D(normalSampler, uv2.zx) +
-				// 				texture2D(normalSampler, uv3.xy);
-
-				// 	return noise * 0.5 - 1.0;
-				// }
-
-				// z mixes
-				// (position.xy + vec2(position.z * 0.1))
-				// (position.xy + vec2(position.z + 0.1))
-				// (position.xy + vec2(sin(position.z * 0.1)))
-				// (position.xy + vec2(sin(position.z)))
-				// (position.xy + vec2(cos(position.z * 0.1)))
-				// (position.xy + vec2(position.z * 0.1, -position.z * 0.1))
 
 				vec4 getNoise(vec3 position) {
 					// Incorporate 'z' in a way that avoids zeroing out the noise
