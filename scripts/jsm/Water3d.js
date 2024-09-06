@@ -42,6 +42,7 @@ class Water extends Mesh {
 		const waterColor = new Color( options.waterColor !== undefined ? options.waterColor : 0x7F7F7F );
 		const eye = options.eye !== undefined ? options.eye : new Vector3( 0, 0, 0 );
 		const distortionScale = options.distortionScale !== undefined ? options.distortionScale : 20.0;
+		const size = options.size !== undefined ? options.size : 1;
 		const side = options.side !== undefined ? options.side : FrontSide;
 		const fog = options.fog !== undefined ? options.fog : false;
 
@@ -61,7 +62,7 @@ class Water extends Mesh {
 
 		const mirrorCamera = new PerspectiveCamera();
 
-		const renderTarget = new WebGLRenderTarget( textureWidth, textureHeight );
+		scope.renderTarget = new WebGLRenderTarget( textureWidth, textureHeight );
 
 		const mirrorShader = {
 
@@ -73,17 +74,15 @@ class Water extends Mesh {
 				{
 					'normalSampler': { value: null },
 					'mirrorSampler': { value: null },
-					'alpha': { value: 1.0 },
+					'alpha': { value: alpha },
 					'time': { value: 0.0 },
-					'theta': { value: 0.0 },
-					'phi': { value: 0.0 },
-					'size': { value: 1.0 },
-					'distortionScale': { value: 20.0 },
+					'size': { value: size },
+					'distortionScale': { value: distortionScale },
 					'textureMatrix': { value: new Matrix4() },
-					'sunColor': { value: new Color( 0x7F7F7F ) },
-					'sunDirection': { value: new Vector3( 0.70707, 0.70707, 0 ) },
-					'eye': { value: new Vector3() },
-					'waterColor': { value: new Color( 0x555555 ) }
+					'sunColor': { value: sunColor },
+					'sunDirection': { value: sunDirection },
+					'eye': { value: eye },
+					'waterColor': { value: waterColor }
 				}
 			] ),
 
@@ -205,7 +204,7 @@ class Water extends Mesh {
 			fog: fog
 		} );
 
-		material.uniforms[ 'mirrorSampler' ].value = renderTarget.texture;
+		material.uniforms[ 'mirrorSampler' ].value = scope.renderTarget.texture;
 		material.uniforms[ 'textureMatrix' ].value = textureMatrix;
 		material.uniforms[ 'alpha' ].value = alpha;
 		material.uniforms[ 'time' ].value = time;
@@ -226,7 +225,7 @@ class Water extends Mesh {
 
 			rotationMatrix.extractRotation( scope.matrixWorld );
 
-			normal.set( 0, 0, 1 );
+			normal.set( 0, 1, 0 );
 			normal.applyMatrix4( rotationMatrix );
 
 			view.subVectors( mirrorWorldPosition, cameraWorldPosition );
@@ -306,7 +305,7 @@ class Water extends Mesh {
 			renderer.xr.enabled = false; // Avoid camera modification and recursion
 			renderer.shadowMap.autoUpdate = false; // Avoid re-computing shadows
 
-			renderer.setRenderTarget( renderTarget );
+			renderer.setRenderTarget( scope.renderTarget );
 
 			renderer.state.buffers.depth.setMask( true ); // make sure the depth buffer is writable so it can be properly cleared, see #18897
 
@@ -331,6 +330,13 @@ class Water extends Mesh {
 			}
 
 		};
+
+		scope.dispose = function () {
+			scope.geometry.dispose();
+			scope.material.dispose();
+			scope.renderTarget.dispose();
+			scope.removeFromParent();
+		}
 
 	}
 

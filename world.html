@@ -69,7 +69,7 @@
 
             let vertDist = 80;
             let onlyOnce = true;
-            function getNearbyTriangles( ) {
+            function getNearbyTriangles( distortionScale, size ) {
                 const mesh = world.children[ 1 ];
 
                 // // Access the position attribute (vertices)
@@ -153,14 +153,14 @@
                         nearbyTriangles.splice(i, 1);
                         removeTriangle(tri);
                     } else if (tri.needsCreate) {
-                        drawTriangle(tri);
+                        drawTriangle(tri, distortionScale, size);
                     }
                 }
 
                 console.log(`Nearby triangles: ${nearbyTriangles.length}`);
             }
 
-            function drawTriangle ( triangle ) {
+            function drawTriangle ( triangle, distortionScale, size ) {
 
                 const v0 = triangle.verts[0];
                 const v1 = triangle.verts[1];
@@ -171,7 +171,7 @@
                 avg.add(v1);
                 avg.add(v2);
                 avg.divideScalar(3);
-                const markerGeo = new SphereGeometry( 1, 8, 8 ); 
+                const markerGeo = new SphereGeometry( 5, 8, 8 ); 
                 const markerMat = new MeshBasicMaterial( { color: 0xff0000 } ); 
                 const marker = new Mesh( markerGeo, markerMat ); 
                 marker.position.set(avg.x, avg.y, avg.z);
@@ -191,21 +191,36 @@
 
                 // itemSize = 3 because there are 3 values (components) per vertex
                 geometry.setAttribute( 'position', new BufferAttribute( vertices, 3 ) );
-                const material = new MeshPhongMaterial( { color: 0x156289, emissive: 0x072534, side: DoubleSide, flatShading: true } );
-                const mesh = new Mesh( geometry, material );
+                geometry.computeVertexNormals();
+                let water = new Water(
+                    geometry,
+                    {
+                        textureWidth: 512,
+                        textureHeight: 512,
+                        waterNormals: new TextureLoader().load( 'waternormals.jpg', function ( texture ) {
+                            texture.wrapS = texture.wrapT = RepeatWrapping;
+                        } ),
+                        sunDirection: lights[ 0 ].position.clone().normalize(),
+                        sunColor: 0xffffff,
+                        waterColor: 0x000f1e,
+                        distortionScale: distortionScale,
+                        size: size,
+                        fog: scene.fog !== undefined
+                    }
+                );
 
-                world.attach( mesh );
-                triangle.mesh = mesh;
+                world.attach( water );
+                console.log(`water ${triangle.index}`, water);
+                triangle.mesh = water;
                 triangle.needsCreate = false;
             }
 
             function removeTriangle ( triangle ) {
-                triangle.mesh.geometry.dispose();
-                triangle.mesh.material.dispose();
                 triangle.marker.geometry.dispose();
                 triangle.marker.material.dispose();
-                triangle.mesh.removeFromParent();
                 triangle.marker.removeFromParent();
+
+                triangle.mesh.dispose();
             }
 
             function calculateSphericalCoordinatesOfNorthPole(sphere) {
@@ -230,7 +245,7 @@
             }
 
 
-			function updateGroupGeometry( mesh, geometry ) {
+			function updateGroupGeometry( mesh, geometry, distortionScale, size ) {
 
 				mesh.children[ 0 ].geometry.dispose();
 				mesh.children[ 1 ].geometry.dispose();
@@ -246,7 +261,7 @@
 
 
                 console.log(`before - world children: ${world.children.length}`);
-                getNearbyTriangles( );
+                getNearbyTriangles( distortionScale, size );
                 console.log(`after - world children: ${world.children.length}`);
 			}
 
@@ -256,7 +271,9 @@
                     const data = {
 						radius: worldRadius,
 						segments: 30,
-                        distance: 120
+                        distance: 120,
+                        waterDistortionScale: 1,
+                        waterSize: 1
 					};
 
 					function generateGeometry() {
@@ -288,15 +305,23 @@
 	                    const numTriangles = boxSphereGeo.index.count / 3; 
                         console.log(`This geometry has ${numTriangles} triangles.`);
 
-						updateGroupGeometry( mesh, boxSphereGeo );
+                        camera.position.y = data.radius + 1;
+                        mushPlace = data.radius + 5;
+
+						updateGroupGeometry( mesh, boxSphereGeo, data.waterDistortionScale, data.waterSize );
 
 					}
 
 					const folder = gui.addFolder( 'BoxSphere' );
 
-					folder.add( data, 'radius', 1, worldRadius ).onChange( generateGeometry );
+					folder.add( data, 'radius', 1, worldRadius*2 ).onChange( generateGeometry );
 					folder.add( data, 'segments', 1, 200 ).step( 1 ).onChange( generateGeometry );
 					folder.add( data, 'distance', 1, 2000 ).step( 1 ).onChange( generateGeometry );
+
+                    const folderWater = gui.addFolder( 'Water' );
+                    folderWater.add( data, 'waterDistortionScale', 0, 8, 0.1 ).name( 'distortionScale' ).onChange( generateGeometry );
+                    folderWater.add( data, 'waterSize', 0.1, 10, 0.1 ).name( 'size' ).onChange( generateGeometry );
+                    folderWater.open();
 
 					generateGeometry();
 
@@ -315,37 +340,6 @@
 				}
 
 			}
-
-			function createWater ( ) {
-                const waterGeometry = new PlaneGeometry( 10000, 10000 );
-                let water = new Water(
-                    waterGeometry,
-                    {
-                        textureWidth: 512,
-                        textureHeight: 512,
-                        waterNormals: new TextureLoader().load( 'waternormals.jpg', function ( texture ) {
-                            texture.wrapS = texture.wrapT = RepeatWrapping;
-                        } ),
-                        sunDirection: lights[ 0 ].position.clone().normalize(),
-                        sunColor: 0xffffff,
-                        waterColor: 0x000f1e,
-                        distortionScale: 3.7,
-                        size: 4.2,
-                        fog: scene.fog !== undefined
-                    }
-                );
-                water.rotation.x = - Math.PI / 2;
-                water.position.y = worldRadius;
-                scene.add( water );
-            
-                const waterUniforms = water.material.uniforms;
-                const folderWater = gui.addFolder( 'Water' );
-                folderWater.add( waterUniforms.distortionScale, 'value', 0, 8, 0.1 ).name( 'distortionScale' );
-                folderWater.add( waterUniforms.size, 'value', 0.1, 10, 0.1 ).name( 'size' );
-                folderWater.open();
-
-                return water;
-            }
 
 			const selectedGeometry = window.location.hash.substring( 1 );
 
@@ -368,23 +362,10 @@
 			renderer.setSize( window.innerWidth, window.innerHeight );
 			document.body.appendChild( renderer.domElement );
 
-			//const orbit = new OrbitControls( camera, renderer.domElement );
-
 			const lights = [];
 			lights[ 0 ] = new DirectionalLight( 0xffffff, 3 );
-			//lights[ 1 ] = new DirectionalLight( 0xffffff, 3 );
-			//lights[ 2 ] = new DirectionalLight( 0xffffff, 3 );
-
 			lights[ 0 ].position.set( 200, worldRadius+40, 400 );
-			//lights[ 1 ].position.set( 200, 400, 400 );
-			//lights[ 2 ].position.set( - 200, - 400, - 200 );
-
 			scene.add( lights[ 0 ] );
-			//scene.add( lights[ 1 ] );
-			//scene.add( lights[ 2 ] );
-
-
-            //let water = createWater();
 
 			const world = new Group();
             let nearbyTriangles = [];
@@ -397,7 +378,15 @@
 
 			world.add( new LineSegments( geometry, lineMaterial ) );
 			world.add( new Mesh( geometry, meshMaterial ) );
+            world.children[ 0 ].visible = false;
             world.children[ 1 ].visible = false;
+
+            const mushGeo = new BoxGeometry(5,5,5);
+            const mush = new Mesh(mushGeo, meshMaterial);
+            mush.position.y = worldRadius + 1;
+            mush.position.z -= 15;
+            let mushPlace = worldRadius + 5;
+            scene.add( mush );
 
 			chooseFromHash( world );
 
@@ -438,7 +427,15 @@
                     }
                 }
 
-                // water.material.uniforms[ 'time' ].value += 1.0 / 60.0;
+                for (let i = 0; i < nearbyTriangles.length; i++) {
+                    let water = nearbyTriangles[i];
+                    water.mesh.material.uniforms[ 'time' ].value += 1.0 / 60.0;
+                }
+
+				const time = performance.now() * 0.001;
+                mush.position.y = Math.sin( time ) * 20 + mushPlace;
+                mush.rotation.x = time * 0.5;
+                mush.rotation.z = time * 0.51;
 
 				renderer.render( scene, camera );
 
