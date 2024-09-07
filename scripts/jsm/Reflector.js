@@ -51,6 +51,7 @@ class Reflector extends Mesh {
 		const virtualCamera = this.camera;
 
 		const renderTarget = new WebGLRenderTarget( textureWidth, textureHeight, { samples: multisample, type: HalfFloatType } );
+		scope.renderTarget = renderTarget;
 
 		const material = new ShaderMaterial( {
 			name: ( shader.name !== undefined ) ? shader.name : 'unspecified',

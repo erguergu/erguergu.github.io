@@ -26,6 +26,7 @@ class Refractor extends Mesh {
 
 		const scope = this;
 
+		const doRefraction = options.doRefraction;
 		const color = ( options.color !== undefined ) ? new Color( options.color ) : new Color( 0x7F7F7F );
 		const textureWidth = options.textureWidth || 512;
 		const textureHeight = options.textureHeight || 512;
@@ -75,6 +76,8 @@ class Refractor extends Mesh {
 			const normal = new Vector3();
 
 			return function visible( camera ) {
+				if (!doRefraction)
+					return false;
 
 				refractorWorldPosition.setFromMatrixPosition( scope.matrixWorld );
 				cameraWorldPosition.setFromMatrixPosition( camera.matrixWorld );

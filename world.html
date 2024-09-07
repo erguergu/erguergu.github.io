@@ -39,6 +39,7 @@
 				CapsuleGeometry,
 				CircleGeometry,
 				Color,
+                CubeTextureLoader,
 				DirectionalLight,
 				DoubleSide,
 				Float32BufferAttribute,
@@ -62,10 +63,10 @@
 
 			import { GUI } from './scripts/jsm/lil-gui.module.min.js';
 			import { OrbitControls } from './scripts/jsm/OrbitControls.js';
-			import { Water } from 'three/addons/Water3d.js';
+			import { Water } from './scripts/jsm/Water2.js';
 
 			const twoPi = Math.PI * 2;
-            const worldRadius = 2000;
+            const worldRadius = 5000;
 
             let vertDist = 80;
             let onlyOnce = true;
@@ -172,7 +173,8 @@
                 avg.add(v2);
                 avg.divideScalar(3);
                 const markerGeo = new SphereGeometry( 5, 8, 8 ); 
-                const markerMat = new MeshBasicMaterial( { color: 0xff0000 } ); 
+                //const markerMat = new MeshBasicMaterial( { color: 0xff0000 } ); 
+                const markerMat = new MeshPhongMaterial( { color: 0xff0000, emissive: 0x072534 } );
                 const marker = new Mesh( markerGeo, markerMat ); 
                 marker.position.set(avg.x, avg.y, avg.z);
                 world.attach( marker );
@@ -187,30 +189,31 @@
                     v2.x, v2.y, v2.z, // v2
                 ] );
 
-                // need to set normals here
-
-                // itemSize = 3 because there are 3 values (components) per vertex
                 geometry.setAttribute( 'position', new BufferAttribute( vertices, 3 ) );
+				geometry.setAttribute( 'uv', new BufferAttribute( new Float32Array( [0,1,1,1,0,0/*,1,1,1,0,0,0*/] ), 2 ));
                 geometry.computeVertexNormals();
+				const norms = geometry.getAttribute('normal');
+				const firstNorm = new Vector3(norms.getX(0),norms.getY(0),norms.getZ(0));
+                const params = {
+                    color: '#ffffff',
+                    scale: 4,
+                    flowX: 1,
+                    flowY: 1
+                };
                 let water = new Water(
                     geometry,
                     {
-                        textureWidth: 512,
-                        textureHeight: 512,
-                        waterNormals: new TextureLoader().load( 'waternormals.jpg', function ( texture ) {
-                            texture.wrapS = texture.wrapT = RepeatWrapping;
-                        } ),
-                        sunDirection: lights[ 0 ].position.clone().normalize(),
-                        sunColor: 0xffffff,
-                        waterColor: 0x000f1e,
-                        distortionScale: distortionScale,
-                        size: size,
-                        fog: scene.fog !== undefined
+                        doRefraction: false,
+                        color: params.color,
+                        scale: params.scale,
+                        flowDirection: new Vector2( params.flowX, params.flowY ),
+                        textureWidth: 1024,
+                        textureHeight: 1024,
+                        normal: firstNorm
                     }
                 );
 
                 world.attach( water );
-                console.log(`water ${triangle.index}`, water);
                 triangle.mesh = water;
                 triangle.needsCreate = false;
             }
@@ -260,9 +263,9 @@
                 }
 
 
-                console.log(`before - world children: ${world.children.length}`);
+                //console.log(`before - world children: ${world.children.length}`);
                 getNearbyTriangles( distortionScale, size );
-                console.log(`after - world children: ${world.children.length}`);
+                //console.log(`after - world children: ${world.children.length}`);
 			}
 
 			const guis = {
@@ -300,13 +303,13 @@
                         } 
                         // Recompute normals for shading
                         boxSphereGeo.computeVertexNormals();
-
                         
 	                    const numTriangles = boxSphereGeo.index.count / 3; 
                         console.log(`This geometry has ${numTriangles} triangles.`);
 
-                        camera.position.y = data.radius + 1;
-                        mushPlace = data.radius + 5;
+                        //camera.position.y = data.radius + 1;
+                        mushPlace = 5;
+                        world.position.y = -data.radius;
 
 						updateGroupGeometry( mesh, boxSphereGeo, data.waterDistortionScale, data.waterSize );
 
@@ -352,10 +355,20 @@
 			const gui = new GUI();
 
 			const scene = new Scene();
-			scene.background = new Color( 0x4444ff );
+			scene.background = new Color( 0xd0ccff );
+            // skybox
+            const cubeTextureLoader = new CubeTextureLoader();
+            cubeTextureLoader.setPath( './sky/space01/' );
+
+            const cubeTexture = cubeTextureLoader.load( [
+                'posx.jpg', 'negx.jpg',
+                'posy.jpg', 'negy.jpg',
+                'posz.jpg', 'negz.jpg'
+            ] );
+            scene.background = cubeTexture;
 
 			const camera = new PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1500 );
-            camera.position.y = worldRadius + 1;
+            camera.position.y = 1;
 
 			const renderer = new WebGLRenderer( { antialias: true } );
 			renderer.setPixelRatio( window.devicePixelRatio );
@@ -364,7 +377,7 @@
 
 			const lights = [];
 			lights[ 0 ] = new DirectionalLight( 0xffffff, 3 );
-			lights[ 0 ].position.set( 200, worldRadius+40, 400 );
+			lights[ 0 ].position.set( 200, 400, 400 );
 			scene.add( lights[ 0 ] );
 
 			const world = new Group();
@@ -374,21 +387,63 @@
 			geometry.setAttribute( 'position', new Float32BufferAttribute( [], 3 ) );
 
 			const lineMaterial = new LineBasicMaterial( { color: 0xffffff, transparent: true, opacity: 0.5 } );
-			const meshMaterial = new MeshPhongMaterial( { color: 0x156289, emissive: 0x072534, side: DoubleSide, flatShading: true } );
+			const meshMaterial = new MeshPhongMaterial( { color: 0x156289, emissive: 0x072534 } );
 
 			world.add( new LineSegments( geometry, lineMaterial ) );
 			world.add( new Mesh( geometry, meshMaterial ) );
-            world.children[ 0 ].visible = false;
+            world.children[ 0 ].visible = true;
             world.children[ 1 ].visible = false;
+            world.position.y = -worldRadius;
 
             const mushGeo = new BoxGeometry(5,5,5);
             const mush = new Mesh(mushGeo, meshMaterial);
-            mush.position.y = worldRadius + 1;
+            mush.position.y =  1;
             mush.position.z -= 15;
-            let mushPlace = worldRadius + 5;
+            let mushPlace = 5;
             scene.add( mush );
 
 			chooseFromHash( world );
+
+            // const yy =  0;
+            // const w2xz = 1000;
+            // let triangle = { index: -1, verts: [ 
+            //         new Vector3(-w2xz, yy, w2xz), // v0
+            //         new Vector3(w2xz, yy, w2xz), // v1
+            //         new Vector3(-w2xz, yy, -w2xz), // v2
+            //         ], needsCreate: true, needsRemove: false, mesh: null, marker: null };
+            //         console.log(triangle);
+            // drawTriangle(triangle);
+
+            
+
+            // const waterGeometry2 = new BufferGeometry();
+            // const vertices = new Float32Array( [
+            //     -w2xz, yy, w2xz,
+            //     w2xz, yy, w2xz,
+            //     -w2xz, yy, -w2xz,
+
+            //     w2xz, yy, w2xz,
+            //     w2xz, yy, -w2xz,
+            //     -w2xz, yy, -w2xz,
+
+            // ] );
+            // waterGeometry2.setAttribute( 'position', new BufferAttribute( vertices, 3 ) );
+            // waterGeometry2.setAttribute( 'uv', new BufferAttribute( new Float32Array( [0,1,1,1,0,0,1,1,1,0,0,0] ), 2 ));
+            // waterGeometry2.computeVertexNormals();
+            // const norms = waterGeometry2.getAttribute('normal');
+            // const firstNorm = new Vector3(norms.getX(0),norms.getY(0),norms.getZ(0));
+
+            // console.log(`waterGeometry2`, waterGeometry2);
+            
+            // const water1 = new Water( waterGeometry2, {
+            //     color: '#ffffff',
+            //     scale: 4,
+            //     flowDirection: new Vector2( 1, 1 ),
+            //     textureWidth: 1024,
+            //     textureHeight: 1024,
+            //     normal: firstNorm
+            // } );
+            // scene.add( water1 );
 
 			scene.add( world );
 
@@ -403,7 +458,6 @@
                     console.log(`world`, world.children[1]);
                 }
 
-				requestAnimationFrame( render );
 
 				// Turn the camera if the user is turning:
                 camera.rotation.y += dirRotate * 0.05;
@@ -427,16 +481,17 @@
                     }
                 }
 
-                for (let i = 0; i < nearbyTriangles.length; i++) {
-                    let water = nearbyTriangles[i];
-                    water.mesh.material.uniforms[ 'time' ].value += 1.0 / 60.0;
-                }
+                // for (let i = 0; i < nearbyTriangles.length; i++) {
+                //     let water = nearbyTriangles[i];
+                //     water.mesh.material.uniforms[ 'time' ].value += 1.0 / 60.0;
+                // }
 
 				const time = performance.now() * 0.001;
-                mush.position.y = Math.sin( time ) * 20 + mushPlace;
+                mush.position.y = Math.sin( time ) * 2 + mushPlace-1.5;
                 mush.rotation.x = time * 0.5;
                 mush.rotation.z = time * 0.51;
 
+				//requestAnimationFrame( render );
 				renderer.render( scene, camera );
 
 			}
@@ -451,8 +506,9 @@
 			}, false );
 
             let dirRotate = 0;
-            let dirMove = 1;
+            let dirMove = 0;
             window.addEventListener( 'keydown', function( e ) {
+                //console.log(`key`,e);
                 if (e.code == 'ArrowLeft') {
                     dirRotate = 1;
                 } else if (e.code == 'ArrowRight') {
@@ -471,7 +527,12 @@
                 }
             });
 
-			render();
+			renderer.setAnimationLoop( render );
+
+            // function animate() {
+            //     renderer.render( scene, camera );
+            // }
+            // renderer.setAnimationLoop( animate );
 
 		</script>
 	</body>

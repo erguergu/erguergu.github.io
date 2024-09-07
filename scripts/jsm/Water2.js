@@ -33,6 +33,7 @@ class Water extends Mesh {
 
 		const scope = this;
 
+		const doRefraction = options.doRefraction;
 		const color = ( options.color !== undefined ) ? new Color( options.color ) : new Color( 0xFFFFFF );
 		const textureWidth = options.textureWidth !== undefined ? options.textureWidth : 512;
 		const textureHeight = options.textureHeight !== undefined ? options.textureHeight : 512;
@@ -79,6 +80,7 @@ class Water extends Mesh {
 		} );
 
 		const refractor = new Refractor( geometry, {
+			doRefraction: doRefraction,
 			textureWidth: textureWidth,
 			textureHeight: textureHeight,
 			clipBias: clipBias,
@@ -201,6 +203,14 @@ class Water extends Mesh {
 
 			scope.visible = true;
 
+		};
+
+		scope.dispose = function () {
+			this.material.dispose();
+			this.geometry.dispose();
+			reflector.dispose();
+			refractor.dispose();
+			this.removeFromParent();
 		};
 
 	}

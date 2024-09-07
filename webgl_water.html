@@ -60,8 +60,9 @@
 
 				const torusKnotGeometry = new THREE.TorusKnotGeometry( 3, 1, 256, 32 );
 				const torusKnotMaterial = new THREE.MeshNormalMaterial();
+				const meshMaterial = new THREE.MeshPhongMaterial( { color: 0xff6289, emissive: 0x072534 } );
 
-				torusKnot = new THREE.Mesh( torusKnotGeometry, torusKnotMaterial );
+				torusKnot = new THREE.Mesh( torusKnotGeometry, meshMaterial );
 				torusKnot.position.y = 3;
 				torusKnot.scale.set( 0.5, 0.5, 0.5 );
 				scene.add( torusKnot );
@@ -69,7 +70,7 @@
 				// ground
 
 				const groundGeometry = new THREE.PlaneGeometry( 20, 20 );
-				const groundMaterial = new THREE.MeshStandardMaterial( { roughness: 0.8, metalness: 0.4 } );
+				const groundMaterial = new THREE.MeshStandardMaterial( { roughness: 0.8, metalness: 0.4, side: THREE.DoubleSide } );
 				const ground = new THREE.Mesh( groundGeometry, groundMaterial );
 				ground.rotation.x = Math.PI * - 0.5;
 				scene.add( ground );
@@ -89,27 +90,25 @@
 
 				// water
 				const waterGeometry = new THREE.PlaneGeometry( 20, 20 );
+				console.log(`waterGeometry`, waterGeometry);
+
                 const waterGeometry2 = new THREE.BufferGeometry();
                 const vertices = new Float32Array( [
-                    -10.0, -2.0, 10.0, // v0
-                    10.0, 0.0, 10.0, // v1
-                    -10.0, 0.0, -10.0, // v2
-
-                    // 10.0, 0.0, 10.0,
-					// 10.0, 0.0, -10.0,
-                    // -10.0, 0.0, -10.0,
+                    -10.0, -2.0, 10.0,
+                    10.0, 0.0, 10.0,
+                    -10.0, 0.0, -10.0,
                 ] );
 				//waterGeometry2.setIndex(new THREE.BufferAttribute(new Uint16Array([0,2,1/*,2,3,1*/]), 1));
                 waterGeometry2.setAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
-				waterGeometry2.setAttribute( 'uv', new THREE.BufferAttribute( new Float32Array( [0,1,1,1,0,0/*,1,1,1,0,0,0*/] ), 2 ));
+				waterGeometry2.setAttribute( 'uv', new THREE.BufferAttribute( new Float32Array( [0,1,1,1,0,0] ), 2 ));
                 waterGeometry2.computeVertexNormals();
 				const norms = waterGeometry2.getAttribute('normal');
 				const firstNorm = new THREE.Vector3(norms.getX(0),norms.getY(0),norms.getZ(0));
 
-				console.log(`waterGeometry`, waterGeometry);
 				console.log(`waterGeometry2`, waterGeometry2);
 
 				water = new Water( waterGeometry2, {
+					doRefraction: true,
 					color: params.color,
 					scale: params.scale,
 					flowDirection: new THREE.Vector2( params.flowX, params.flowY ),
@@ -122,9 +121,8 @@
 				scene.add( water );
 
 				// skybox
-
 				const cubeTextureLoader = new THREE.CubeTextureLoader();
-				cubeTextureLoader.setPath( './' );
+				cubeTextureLoader.setPath( './sky/park/' );
 
 				const cubeTexture = cubeTextureLoader.load( [
 					'posx.jpg', 'negx.jpg',
