@@ -173,7 +173,6 @@
                 avg.add(v2);
                 avg.divideScalar(3);
                 const markerGeo = new SphereGeometry( 5, 8, 8 ); 
-                //const markerMat = new MeshBasicMaterial( { color: 0xff0000 } ); 
                 const markerMat = new MeshPhongMaterial( { color: 0xff0000, emissive: 0x072534 } );
                 const marker = new Mesh( markerGeo, markerMat ); 
                 marker.position.set(avg.x, avg.y, avg.z);
@@ -205,6 +204,7 @@
                     {
                         doRefraction: false,
                         color: params.color,
+                        reflectivity: 1,
                         scale: params.scale,
                         flowDirection: new Vector2( params.flowX, params.flowY ),
                         textureWidth: 1024,
@@ -391,7 +391,7 @@
 
 			world.add( new LineSegments( geometry, lineMaterial ) );
 			world.add( new Mesh( geometry, meshMaterial ) );
-            world.children[ 0 ].visible = true;
+            world.children[ 0 ].visible = false;
             world.children[ 1 ].visible = false;
             world.position.y = -worldRadius;
 

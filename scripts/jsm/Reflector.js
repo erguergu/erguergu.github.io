@@ -217,6 +217,8 @@ Reflector.ReflectorShader = {
 	vertexShader: /* glsl */`
 		uniform mat4 textureMatrix;
 		varying vec4 vUv;
+		varying vec4 mirrorCoord;
+		varying vec4 worldPosition;
 
 		#include <common>
 		#include <logdepthbuf_pars_vertex>
@@ -224,6 +226,8 @@ Reflector.ReflectorShader = {
 		void main() {
 
 			vUv = textureMatrix * vec4( position, 1.0 );
+			mirrorCoord = modelMatrix * vec4( position, 1.0 );
+			worldPosition = mirrorCoord.xyzw;
 
 			gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
 
@@ -235,6 +239,8 @@ Reflector.ReflectorShader = {
 		uniform vec3 color;
 		uniform sampler2D tDiffuse;
 		varying vec4 vUv;
+		varying vec4 mirrorCoord;
+		varying vec4 worldPosition;
 
 		#include <logdepthbuf_pars_fragment>
 
