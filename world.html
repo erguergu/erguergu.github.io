@@ -213,9 +213,73 @@
                     }
                 );
 
-                world.attach( water );
+                //world.attach( water );
                 triangle.mesh = water;
                 triangle.needsCreate = false;
+            }
+
+            const waterTileSize = 100;
+            const waterTileCount = 3;
+            const waterTiles = [];
+            function initWaterTiles() {
+                let i = 0;
+                for (let x = 0; x < waterTileCount; x++) {
+                    for (let z = 0; z < waterTileCount; z++) {
+                        const from0x = x * waterTileSize;
+                        const from0z = z * waterTileSize;
+                        const totalDim = waterTileSize * waterTileCount;
+                        const shiftedX = totalDim/2 - from0x;
+                        const shiftedZ = totalDim/2 - from0z;
+
+                        const water = drawWaterTile(i, shiftedX, 0, shiftedZ);
+                        waterTiles.push(water);
+                        i++;
+                    }
+                }
+            }
+
+
+            function drawWaterTile ( index, xPos, yPos, zPos ) {
+                const minX = xPos - waterTileSize/2;
+                const maxX = xPos + waterTileSize/2;
+                const yVal = yPos;
+                const minZ = zPos - waterTileSize/2;
+                const maxZ = zPos + waterTileSize/2;
+                const geometry = new BufferGeometry();
+                const vertices = new Float32Array( [
+                    minX, yVal, maxZ, // v0
+                    maxX, yVal, maxZ, // v1
+                    minX, yVal, minZ, // v2
+
+                    maxX, yVal, maxZ,
+                    maxX, yVal, minZ,
+                    minX, yVal, minZ,
+                ] );
+                geometry.setAttribute( 'position', new BufferAttribute( vertices, 3 ) );
+				geometry.setAttribute( 'uv', new BufferAttribute( new Float32Array( [0,1,1,1,0,0,1,1,1,0,0,0] ), 2 ));
+                geometry.computeVertexNormals();
+				const firstNorm = new Vector3(0,1,0);
+                const params = {
+                    color: '#ffffff',
+                    scale: 4,
+                    flowX: 1,
+                    flowY: 1
+                };
+                let water = new Water(
+                    geometry,
+                    {
+                        doRefraction: false,
+                        color: params.color,
+                        reflectivity: 1,
+                        scale: params.scale,
+                        flowDirection: new Vector2( params.flowX, params.flowY ),
+                        textureWidth: 1024,
+                        textureHeight: 1024,
+                        normal: firstNorm
+                    }
+                );
+                scene.attach(water);
+                return water;
             }
 
             function removeTriangle ( triangle ) {
@@ -247,7 +311,6 @@
                 return { theta, phi };
             }
 
-
 			function updateGroupGeometry( mesh, geometry, distortionScale, size ) {
 
 				mesh.children[ 0 ].geometry.dispose();
@@ -256,15 +319,15 @@
 				mesh.children[ 0 ].geometry = new WireframeGeometry( geometry );
 				mesh.children[ 1 ].geometry = geometry;
 
-                for (let i = nearbyTriangles.length - 1; i >= 0; i--) {
-                    const tri = nearbyTriangles[i];
-                    nearbyTriangles.splice(i);
-                    removeTriangle(tri);
-                }
+                // for (let i = nearbyTriangles.length - 1; i >= 0; i--) {
+                //     const tri = nearbyTriangles[i];
+                //     nearbyTriangles.splice(i);
+                //     removeTriangle(tri);
+                // }
 
 
                 //console.log(`before - world children: ${world.children.length}`);
-                getNearbyTriangles( distortionScale, size );
+                //getNearbyTriangles( distortionScale, size );
                 //console.log(`after - world children: ${world.children.length}`);
 			}
 
@@ -304,8 +367,8 @@
                         // Recompute normals for shading
                         boxSphereGeo.computeVertexNormals();
                         
-	                    const numTriangles = boxSphereGeo.index.count / 3; 
-                        console.log(`This geometry has ${numTriangles} triangles.`);
+	                    //const numTriangles = boxSphereGeo.index.count / 3; 
+                        //console.log(`This geometry has ${numTriangles} triangles.`);
 
                         //camera.position.y = data.radius + 1;
                         mushPlace = 5;
@@ -320,11 +383,13 @@
 					folder.add( data, 'radius', 1, worldRadius*2 ).onChange( generateGeometry );
 					folder.add( data, 'segments', 1, 200 ).step( 1 ).onChange( generateGeometry );
 					folder.add( data, 'distance', 1, 2000 ).step( 1 ).onChange( generateGeometry );
+                    folder.close();
 
                     const folderWater = gui.addFolder( 'Water' );
                     folderWater.add( data, 'waterDistortionScale', 0, 8, 0.1 ).name( 'distortionScale' ).onChange( generateGeometry );
                     folderWater.add( data, 'waterSize', 0.1, 10, 0.1 ).name( 'size' ).onChange( generateGeometry );
-                    folderWater.open();
+                    folderWater.close();
+                    gui.close();
 
 					generateGeometry();
 
@@ -358,7 +423,7 @@
 			scene.background = new Color( 0xd0ccff );
             // skybox
             const cubeTextureLoader = new CubeTextureLoader();
-            cubeTextureLoader.setPath( './sky/space01/' );
+            cubeTextureLoader.setPath( './sky/park/' );
 
             const cubeTexture = cubeTextureLoader.load( [
                 'posx.jpg', 'negx.jpg',
@@ -446,6 +511,7 @@
             // scene.add( water1 );
 
 			scene.add( world );
+            initWaterTiles();
 
             const rotationSpeed = 0.00005;
             const upVector = new Vector3(0, 1, 0);
@@ -477,7 +543,7 @@
 
                     if (dirMove != 0) {
                         //console.log(`Theta: ${sphericalCoords.theta}, Phi: ${sphericalCoords.phi}`);
-                        getNearbyTriangles();
+                        //getNearbyTriangles();
                     }
                 }
 
@@ -505,7 +571,7 @@
 
 			}, false );
 
-            let dirRotate = 0;
+            let dirRotate = -.025;
             let dirMove = 0;
             window.addEventListener( 'keydown', function( e ) {
                 //console.log(`key`,e);
