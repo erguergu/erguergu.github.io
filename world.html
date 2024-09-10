@@ -218,20 +218,29 @@
                 triangle.needsCreate = false;
             }
 
-            const waterTileSize = 100;
-            const waterTileCount = 3;
+            function removeTriangle ( triangle ) {
+                triangle.marker.geometry.dispose();
+                triangle.marker.material.dispose();
+                triangle.marker.removeFromParent();
+
+                triangle.mesh.dispose();
+            }
+            
+            
+            const waterTileSize = 100; // you can change this one.
+            const waterTileCount = 3; // NOTE: don't try to change this, it will probably break stuff
             const waterTiles = [];
             function initWaterTiles() {
                 let i = 0;
+                const totalDim = waterTileSize * waterTileCount; // 300
+                console.log(`total water dim: ${totalDim}`);
                 for (let x = 0; x < waterTileCount; x++) {
+                    // first, get the center point of the xth tile if it were starting at 0
+                    const xCenter = ((x+1) * waterTileSize - waterTileSize/2) - (waterTileSize*waterTileCount*.5);
                     for (let z = 0; z < waterTileCount; z++) {
-                        const from0x = x * waterTileSize;
-                        const from0z = z * waterTileSize;
-                        const totalDim = waterTileSize * waterTileCount;
-                        const shiftedX = totalDim/2 - from0x;
-                        const shiftedZ = totalDim/2 - from0z;
+                        const zCenter = ((z+1) * waterTileSize - waterTileSize/2) - (waterTileSize*waterTileCount*.5);
 
-                        const water = drawWaterTile(i, shiftedX, 0, shiftedZ);
+                        const water = drawWaterTile(i, xCenter, 0, zCenter);
                         waterTiles.push(water);
                         i++;
                     }
@@ -240,6 +249,7 @@
 
 
             function drawWaterTile ( index, xPos, yPos, zPos ) {
+                console.log(`Draw tile: ${index}: xPos=${xPos}, zPos=${zPos}`);
                 const minX = xPos - waterTileSize/2;
                 const maxX = xPos + waterTileSize/2;
                 const yVal = yPos;
@@ -282,12 +292,48 @@
                 return water;
             }
 
-            function removeTriangle ( triangle ) {
-                triangle.marker.geometry.dispose();
-                triangle.marker.material.dispose();
-                triangle.marker.removeFromParent();
+            // the 0th vertex is off-center so the bounds are also a bit offset
+            const xMinTileBound = (waterTileSize*waterTileCount*-.5) - waterTileSize; // -150 - 100
+            const xMaxTileBound = (waterTileSize/2) + waterTileSize; // 50 + 100
+            const zMinTileBound = (waterTileSize*-.5) - waterTileSize; // -50 - 100
+            const zMaxTileBound = (waterTileSize*waterTileCount*.5) + waterTileSize; // 150 + 100
+            const shiftAmt = waterTileSize * waterTileCount;
+            function moveWater( cameraDirection ) {
+                if (dirMove == 0) {
+                    return;
+                }
+                // move the tiles in the direction
+                for (let i = 0; i < waterTiles.length; i++) {
+                    const tile = waterTiles[i];
+                    tile.translateOnAxis(cameraDirection, .06 * -dirMove);
+                }
 
-                triangle.mesh.dispose();
+                // loop through each tile and if its 0th vertex
+                // is out of bounds, shift the mesh accordingly
+                for (let i = 0; i < waterTiles.length; i++) {
+                    const tile = waterTiles[i];
+				    const positionAttribute = tile.geometry.getAttribute('position');
+                    const lv = new Vector3().fromBufferAttribute(positionAttribute, 0);
+                    const wv = lv;
+                    tile.localToWorld(wv);
+                    if (wv.x < xMinTileBound) {
+                        tile.translateX(shiftAmt);
+                        console.log(`tile ${i}'s x was below ${xMinTileBound} so I moved it on x by ${shiftAmt}`);
+                    } else if (wv.x > xMaxTileBound) {
+                        tile.translateX(-shiftAmt);
+                        console.log(`tile ${i}'s x was above ${xMaxTileBound} so I moved it on x by ${shiftAmt}`);
+                    }
+                    if (wv.z < zMinTileBound) {
+                        tile.translateZ(shiftAmt);
+                        console.log(`tile ${i}'s z was below ${zMinTileBound} so I moved it on z by ${shiftAmt}`);
+                    } else if (wv.z > zMaxTileBound) {
+                        tile.translateZ(-shiftAmt);
+                        console.log(`tile ${i}'s z was below ${zMaxTileBound} so I moved it on z by ${shiftAmt}`);
+                    }
+                }
+
+                // now 
+                //console.log(`firstVerts`, firstVerts);
             }
 
             function calculateSphericalCoordinatesOfNorthPole(sphere) {
@@ -537,11 +583,14 @@
                 // Rotate the 'world' under the camera to give the impression of the
                 // camera moving around the surface of the world.
                 world.rotateOnWorldAxis(rotationAxis, rotationSpeed * dirMove);
+                moveWater( cameraDirection );
+
 
                 if (frameCount++ == 60) {
                     frameCount = 0;
 
                     if (dirMove != 0) {
+                        
                         //console.log(`Theta: ${sphericalCoords.theta}, Phi: ${sphericalCoords.phi}`);
                         //getNearbyTriangles();
                     }
@@ -571,8 +620,8 @@
 
 			}, false );
 
-            let dirRotate = -.025;
-            let dirMove = 0;
+            let dirRotate = 0;//-.025;
+            let dirMove = 1;
             window.addEventListener( 'keydown', function( e ) {
                 //console.log(`key`,e);
                 if (e.code == 'ArrowLeft') {
