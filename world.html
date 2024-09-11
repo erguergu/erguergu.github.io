@@ -350,8 +350,8 @@
                 spinningBox.translateOnAxis(cameraDirection, moveImpulse * -dirMove);
             }
 
-            const terrainTileRes = 1000;
-            const terrainTileSize = 10000;
+            const terrainTileRes = 40;
+            const terrainTileSize = 100;
             const terrainHeightMult = .9;
             const terrainYPos = -50;
             let terrain, texture;
@@ -560,7 +560,7 @@
 			}, false );
 
             let dirRotate = 0;//-.025;
-            let dirMove = 1;
+            let dirMove = 0;
             window.addEventListener( 'keydown', function( e ) {
                 //console.log(`key`,e);
                 if (e.code == 'ArrowLeft') {
