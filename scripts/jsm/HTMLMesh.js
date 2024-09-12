@@ -6,17 +6,18 @@ import {
 	MeshBasicMaterial,
 	PlaneGeometry,
 	SRGBColorSpace,
-	Color
+	Color,
+	FrontSide
 } from 'three';
 
 class HTMLMesh extends Mesh {
 
-	constructor( dom ) {
+	constructor( dom, side = FrontSide ) {
 
 		const texture = new HTMLTexture( dom );
 
 		const geometry = new PlaneGeometry( texture.image.width * 0.001, texture.image.height * 0.001 );
-		const material = new MeshBasicMaterial( { map: texture, toneMapped: false, transparent: true, side: DoubleSide } );
+		const material = new MeshBasicMaterial( { map: texture, toneMapped: false, transparent: true, side: side } );
 
 		super( geometry, material );
 
