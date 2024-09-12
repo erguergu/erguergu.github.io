@@ -51,16 +51,26 @@
 
 				scene = new THREE.Scene();
 
-				new RGBELoader()
-					.setPath( '../sky/' )
-					.load( 'moonless_golf_1k.hdr', function ( texture ) {
+				// new RGBELoader()
+				// 	.setPath( '../sky/' )
+				// 	.load( 'moonless_golf_1k.hdr', function ( texture ) {
 
-						texture.mapping = THREE.EquirectangularReflectionMapping;
+				// 		texture.mapping = THREE.EquirectangularReflectionMapping;
 
-						scene.background = texture;
-						scene.environment = texture;
+				// 		scene.background = texture;
+				// 		scene.environment = texture;
 
-					} );
+				// 	} );
+				scene.background = new THREE.CubeTextureLoader()
+					.setPath( '../sky/sunny/' )
+					.load( [
+								'posx.jpg',
+								'negx.jpg',
+								'posy.jpg',
+								'negy.jpg',
+								'posz.jpg',
+								'negz.jpg'
+							] );
 
 				camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.1, 10 );
 				camera.position.set( 0, 1.6, 1.5 );
@@ -94,13 +104,13 @@
 				reflector.position.y = 1.5;
 				reflector.position.z = - 3;
 				reflector.rotation.y = - Math.PI / 4;
-				scene.add( reflector );
+				//scene.add( reflector );
 
 				const frameGeometry = new THREE.BoxGeometry( 2.1, 2.1, 0.1 );
 				const frameMaterial = new THREE.MeshPhongMaterial();
 				const frame = new THREE.Mesh( frameGeometry, frameMaterial );
 				frame.position.z = - 0.07;
-				reflector.add( frame );
+				//reflector.add( frame );
 
 				//
 
