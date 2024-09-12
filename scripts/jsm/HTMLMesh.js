@@ -1,5 +1,6 @@
 import {
 	CanvasTexture,
+	DoubleSide,
 	LinearFilter,
 	Mesh,
 	MeshBasicMaterial,
@@ -15,7 +16,7 @@ class HTMLMesh extends Mesh {
 		const texture = new HTMLTexture( dom );
 
 		const geometry = new PlaneGeometry( texture.image.width * 0.001, texture.image.height * 0.001 );
-		const material = new MeshBasicMaterial( { map: texture, toneMapped: false, transparent: true } );
+		const material = new MeshBasicMaterial( { map: texture, toneMapped: false, transparent: true, side: DoubleSide } );
 
 		super( geometry, material );
 
