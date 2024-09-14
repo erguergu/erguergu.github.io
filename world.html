@@ -55,6 +55,7 @@
                 PlaneGeometry,
                 RepeatWrapping,
 				Scene,
+                ShaderMaterial,
                 SphereGeometry,
                 SRGBColorSpace,
                 TextureLoader,
@@ -229,7 +230,52 @@
 
                 triangle.mesh.dispose();
             }
-            
+
+            function createSphere() {
+                // Create a basic sphere geometry
+                const geometry = new SphereGeometry(1, 32, 32);
+                
+				// invert the geometry on the x-axis so that all of the faces point inward
+				geometry.scale( - 100, 100, 100 );
+
+                // Define the two colors for the gradient
+                const color1 = new Color(0xff0000); // Red
+                const color2 = new Color(0x0000ff); // Blue
+
+                // Create a shader material
+                const material = new ShaderMaterial({
+                uniforms: {
+                    color1: { value: color1 },
+                    color2: { value: color2 },
+                },
+                vertexShader: `
+                    varying float vY;
+
+                    void main() {
+                    vY = position.y;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform vec3 color1;
+                    uniform vec3 color2;
+                    varying float vY;
+
+                    void main() {
+                    float t = (vY / 100.0) + 0.5;
+                    
+                    // Interpolate between the two colors
+                    vec3 color = mix(color1, color2, t);
+                    gl_FragColor = vec4(color, 1.0);
+                    }
+                `,
+                });
+
+                // Create a mesh with the sphere geometry and shader material
+                const sphere = new Mesh(geometry, material);
+                scene.add(sphere);
+            }
+
             const waterTileSize = 100; // you can change this one.
             const waterTileCount = 3; // NOTE: don't try to change this, it will probably break stuff
             const waterTiles = [];
@@ -510,6 +556,7 @@
 
             initWaterTiles();
             generateTerrain();
+            createSphere();
 
             const rotationSpeed = 0.00005;
             const upVector = new Vector3(0, 1, 0);

@@ -23,7 +23,7 @@
 			import { GLTFLoader } from '../scripts/jsm/GLTFLoader.js';
 			import * as SkeletonUtils from '../scripts/jsm/SkeletonUtils.js';
 			import { RGBELoader } from '../scripts/jsm/RGBELoader.js';
-			import { Reflector } from '../scripts/jsm/Reflector.js';
+			import { Water } from '../scripts/jsm/Water2.js';
 			import { VRButton } from '../scripts/jsm/VRButton.js';
 
 			import { HTMLMesh } from '../scripts/jsm/HTMLMesh.js';
@@ -37,6 +37,8 @@
 			let reflector;
 			let stats, statsMesh;
 			let model, animations;
+			let controller1, controller2;
+			let debugDiv, debugMesh;
 
 			const mixers = [], objects = [];
 
@@ -61,84 +63,8 @@
 				scene = new THREE.Scene();
 				clock = new THREE.Clock();
 
-				// new RGBELoader()
-				// 	.setPath( '../sky/' )
-				// 	.load( 'moonless_golf_1k.hdr', function ( texture ) {
-
-				// 		texture.mapping = THREE.EquirectangularReflectionMapping;
-
-				// 		scene.background = texture;
-				// 		scene.environment = texture;
-
-				// 	} );
-				scene.background = new THREE.CubeTextureLoader()
-					.setPath( '../sky/sunny/' )
-					.load( [
-								'posx.jpg',
-								'negx.jpg',
-								'posy.jpg',
-								'negy.jpg',
-								'posz.jpg',
-								'negz.jpg'
-							] );
-
-				camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.1, 10 );
+				camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.1, 200 );
 				camera.position.set( 0, 1.6, 1.5 );
-
-				//
-
-				
-				const loader = new GLTFLoader();
-				loader.load( '../models/Soldier.glb', function ( gltf ) {
-					model = gltf.scene;
-					animations = gltf.animations;
-
-					model.traverse( function ( object ) {
-						if ( object.isMesh ) object.castShadow = true;
-					} );
-					setupDefaultScene();
-				} );
-
-
-				const torusGeometry = new THREE.TorusKnotGeometry( ...Object.values( parameters ) );
-				const torusMaterial = new THREE.MeshPhysicalMaterial( {
-					transmission: 1.0, roughness: 0, metalness: 0.25, thickness: 0.5, side: THREE.DoubleSide
-				} );
-				const torus = new THREE.Mesh( torusGeometry, torusMaterial );
-				torus.name = 'torus';
-				torus.position.y = 1.5;
-				torus.position.z = - 2;
-				scene.add( torus );
-
-				const cylinderGeometry = new THREE.CylinderGeometry( 1, 1, 0.1, 50 );
-				const cylinderMaterial = new THREE.MeshStandardMaterial();
-				const cylinder = new THREE.Mesh( cylinderGeometry, cylinderMaterial );
-				cylinder.position.z = - 2;
-				scene.add( cylinder );
-
-				//
-
-				reflector = new Reflector( new THREE.PlaneGeometry( 2, 2 ), {
-                    normal: new THREE.Vector3(0,0,1),
-					textureWidth: window.innerWidth,
-					textureHeight: window.innerHeight
-				} );
-				reflector.position.x = 1;
-				reflector.position.y = 1.5;
-				reflector.position.z = - 3;
-				reflector.rotation.y = - Math.PI / 4;
-				//scene.add( reflector );
-
-				
-				const dirLight = new THREE.DirectionalLight( 0xffffff, 3 );
-				dirLight.position.set( - 3, 10, - 10 );
-				scene.add( dirLight );
-
-				const frameGeometry = new THREE.BoxGeometry( 2.1, 2.1, 0.1 );
-				const frameMaterial = new THREE.MeshPhongMaterial();
-				const frame = new THREE.Mesh( frameGeometry, frameMaterial );
-				frame.position.z = - 0.07;
-				//reflector.add( frame );
 
 				//
 
@@ -156,88 +82,22 @@
 
 				window.addEventListener( 'resize', onWindowResize );
 
-				//
 
-				const geometry = new THREE.BufferGeometry();
-				geometry.setFromPoints( [ new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, 0, - 5 ) ] );
+				createSkySphere();
 
-				const controller1 = renderer.xr.getController( 0 );
-				controller1.add( new THREE.Line( geometry ) );
-				scene.add( controller1 );
+				createWater();
 
-				const controller2 = renderer.xr.getController( 1 );
-				controller2.add( new THREE.Line( geometry ) );
-				scene.add( controller2 );
+				//createSoldiers();
 
-				//
+				//createShape();
 
-				const controllerModelFactory = new XRControllerModelFactory();
+				createFloor();
 
-				const controllerGrip1 = renderer.xr.getControllerGrip( 0 );
-				controllerGrip1.add( controllerModelFactory.createControllerModel( controllerGrip1 ) );
-				scene.add( controllerGrip1 );
+				initLights();
 
-				const controllerGrip2 = renderer.xr.getControllerGrip( 1 );
-				controllerGrip2.add( controllerModelFactory.createControllerModel( controllerGrip2 ) );
-				scene.add( controllerGrip2 );
+				initVrControllers();
 
-				// GUI
-				function onChange() {
-					torus.geometry.dispose();
-					torus.geometry = new THREE.TorusKnotGeometry( ...Object.values( parameters ) );
-				}
-
-				function onThicknessChange() {
-					torus.material.thickness = parameters.thickness;
-				}
-
-				const gui = new GUI( { width: 300 } );
-				gui.add( parameters, 'radius', 0.0, 1.0 ).onChange( onChange );
-				gui.add( parameters, 'tube', 0.0, 1.0 ).onChange( onChange );
-				gui.add( parameters, 'tubularSegments', 10, 150, 1 ).onChange( onChange );
-				gui.add( parameters, 'radialSegments', 2, 20, 1 ).onChange( onChange );
-				gui.add( parameters, 'p', 1, 10, 1 ).onChange( onChange );
-				gui.add( parameters, 'q', 0, 10, 1 ).onChange( onChange );
-				gui.add( parameters, 'thickness', 0, 1 ).onChange( onThicknessChange );
-
-				gui.add( params, 'sharedSkeleton' ).onChange( function () {
-					clearScene();
-					if ( params.sharedSkeleton === true ) {
-						setupSharedSkeletonScene();
-					} else {
-						setupDefaultScene();
-					}
-				} );
-				gui.domElement.style.visibility = 'hidden';
-
-				const group = new InteractiveGroup();
-				group.listenToPointerEvents( renderer, camera );
-				group.listenToXRControllerEvents( controller1 );
-				group.listenToXRControllerEvents( controller2 );
-				scene.add( group );
-
-				const mesh = new HTMLMesh( gui.domElement, THREE.DoubleSide );
-				mesh.position.x = - 0.75;
-				mesh.position.y = 1.5;
-				mesh.position.z = - 0.5;
-				mesh.rotation.y = Math.PI / 4;
-				mesh.scale.setScalar( 2 );
-				group.add( mesh );
-
-
-				// Add stats.js
-				stats = new Stats();
-				stats.dom.style.width = '80px';
-				stats.dom.style.height = '48px';
-				document.body.appendChild( stats.dom );
-
-				statsMesh = new HTMLMesh( stats.dom, THREE.DoubleSide );
-				statsMesh.position.x = - 0.75;
-				statsMesh.position.y = 2;
-				statsMesh.position.z = - 0.6;
-				statsMesh.rotation.y = Math.PI / 4;
-				statsMesh.scale.setScalar( 2.5 );
-				group.add( statsMesh );
+				initGui();
 			}
 			
 			function clearScene() {
@@ -333,6 +193,253 @@
 
 			}
 
+			function initLights() {
+				
+				const dirLight = new THREE.DirectionalLight( 0xffffff, 3 );
+				dirLight.position.set( - 3, 10, - 10 );
+				scene.add( dirLight );
+			}
+
+			function createShape() {
+				const torusGeometry = new THREE.TorusKnotGeometry( ...Object.values( parameters ) );
+				const torusMaterial = new THREE.MeshPhysicalMaterial( {
+					transmission: 1.0, roughness: 0, metalness: 0.25, thickness: 0.5, side: THREE.DoubleSide
+				} );
+				const torus = new THREE.Mesh( torusGeometry, torusMaterial );
+				torus.name = 'torus';
+				torus.position.y = 1.5;
+				torus.position.z = - 2;
+				scene.add( torus );
+
+			}
+
+			function createSoldiers() {
+				
+				const loader = new GLTFLoader();
+				loader.load( '../models/Soldier.glb', function ( gltf ) {
+					model = gltf.scene;
+					animations = gltf.animations;
+
+					model.traverse( function ( object ) {
+						if ( object.isMesh ) object.castShadow = true;
+					} );
+					setupDefaultScene();
+				} );
+
+			}
+
+			function createFloor() {
+
+				const cylinderGeometry = new THREE.CylinderGeometry( 1, 1, 0.1, 50 );
+				const cylinderMaterial = new THREE.MeshStandardMaterial();
+				const cylinder = new THREE.Mesh( cylinderGeometry, cylinderMaterial );
+				cylinder.position.z = - 2;
+				scene.add( cylinder );
+
+			}
+
+			function createWater() {
+                const minX = -50;
+                const maxX = 50;
+                const yVal = -5;
+                const minZ = -50;
+                const maxZ = 50;
+                const geometry = new THREE.BufferGeometry();
+                const vertices = new Float32Array( [
+                    minX, yVal, maxZ, // v0
+                    maxX, yVal, maxZ, // v1
+                    minX, yVal, minZ, // v2
+
+                    maxX, yVal, maxZ,
+                    maxX, yVal, minZ,
+                    minX, yVal, minZ,
+                ] );
+                geometry.setAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
+				geometry.setAttribute( 'uv', new THREE.BufferAttribute( new Float32Array( [0,1,1,1,0,0,1,1,1,0,0,0] ), 2 ));
+                geometry.computeVertexNormals();
+				const firstNorm = new THREE.Vector3(0,1,0);
+                const params = {
+                    color: '#eeeeff',
+                    scale: 10,
+                    flowX: 1,
+                    flowY: 1
+                };
+                let water = new Water(
+                    geometry,
+                    {
+                        doRefraction: false,
+                        color: params.color,
+                        reflectivity: 1,
+                        scale: params.scale,
+                        flowDirection: new THREE.Vector2( params.flowX, params.flowY ),
+                        textureWidth: 256,
+                        textureHeight: 256,
+                        normal: firstNorm
+                    }
+                );
+                scene.attach(water);
+                return water;
+
+			}
+
+			function createSkySphere() {
+				// Create a basic sphere geometry
+				const geometry = new THREE.SphereGeometry(1, 5, 5);
+				
+				// invert the geometry on the x-axis so that all of the faces point inward
+				geometry.scale( - 100, 100, 100 );
+
+				// Define the two colors for the gradient
+				const color1 = new THREE.Color(0xff0000); // Red
+				const color2 = new THREE.Color(0x0000ff); // Blue
+
+				// Create a shader material
+				const material = new THREE.ShaderMaterial({
+				uniforms: {
+					color1: { value: color1 },
+					color2: { value: color2 },
+				},
+				vertexShader: `
+					varying float vY;
+
+					void main() {
+					vY = position.y;
+					gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+					}
+				`,
+				fragmentShader: `
+					uniform vec3 color1;
+					uniform vec3 color2;
+					varying float vY;
+
+					void main() {
+					float t = (vY / 100.0) + 0.6;
+					
+					// Interpolate between the two colors
+					vec3 color = mix(color1, color2, t);
+					gl_FragColor = vec4(color, 1.0);
+					}
+				`,
+				});
+
+				// Create a mesh with the sphere geometry and shader material
+				const sphere = new THREE.Mesh(geometry, material);
+				scene.add(sphere);
+			}
+
+			function initVrControllers() {
+				
+
+				const geometry = new THREE.BufferGeometry();
+				geometry.setFromPoints( [ new THREE.Vector3( 0, 0, 0 ), new THREE.Vector3( 0, 0, - 5 ) ] );
+
+				controller1 = renderer.xr.getController( 0 );
+				console.log(`controller1:`, controller1);
+				controller1.addEventListener( 'connected', (e) => {
+					controller1.gamepad = e.data.gamepad
+					console.log(`controller1 gamepad:`, controller1.gamepad);
+				});
+				controller1.add( new THREE.Line( geometry ) );
+				scene.add( controller1 );
+
+				controller2 = renderer.xr.getController( 1 );
+				controller2.addEventListener( 'connected', (e) => {
+					controller2.gamepad = e.data.gamepad
+				});
+				controller2.add( new THREE.Line( geometry ) );
+				scene.add( controller2 );
+
+				//
+
+				const controllerModelFactory = new XRControllerModelFactory();
+
+				const controllerGrip1 = renderer.xr.getControllerGrip( 0 );
+				controllerGrip1.add( controllerModelFactory.createControllerModel( controllerGrip1 ) );
+				scene.add( controllerGrip1 );
+
+				const controllerGrip2 = renderer.xr.getControllerGrip( 1 );
+				controllerGrip2.add( controllerModelFactory.createControllerModel( controllerGrip2 ) );
+				scene.add( controllerGrip2 );
+			}
+
+			function initGui() {
+				
+
+				// GUI
+				function onChange() {
+					torus.geometry.dispose();
+					torus.geometry = new THREE.TorusKnotGeometry( ...Object.values( parameters ) );
+				}
+
+				function onThicknessChange() {
+					torus.material.thickness = parameters.thickness;
+				}
+
+				const gui = new GUI( { width: 300 } );
+				gui.add( parameters, 'radius', 0.0, 1.0 ).onChange( onChange );
+				gui.add( parameters, 'tube', 0.0, 1.0 ).onChange( onChange );
+				gui.add( parameters, 'tubularSegments', 10, 150, 1 ).onChange( onChange );
+				gui.add( parameters, 'radialSegments', 2, 20, 1 ).onChange( onChange );
+				gui.add( parameters, 'p', 1, 10, 1 ).onChange( onChange );
+				gui.add( parameters, 'q', 0, 10, 1 ).onChange( onChange );
+				gui.add( parameters, 'thickness', 0, 1 ).onChange( onThicknessChange );
+
+				gui.add( params, 'sharedSkeleton' ).onChange( function () {
+					clearScene();
+					if ( params.sharedSkeleton === true ) {
+						setupSharedSkeletonScene();
+					} else {
+						setupDefaultScene();
+					}
+				} );
+				gui.domElement.style.visibility = 'hidden';
+
+				const group = new InteractiveGroup();
+				group.listenToPointerEvents( renderer, camera );
+				group.listenToXRControllerEvents( controller1 );
+				group.listenToXRControllerEvents( controller2 );
+				scene.add( group );
+
+				const mesh = new HTMLMesh( gui.domElement, THREE.DoubleSide );
+				mesh.position.x = - 0.75;
+				mesh.position.y = 1.5;
+				mesh.position.z = - 0.5;
+				mesh.rotation.y = Math.PI / 4;
+				mesh.scale.setScalar( 2 );
+				group.add( mesh );
+
+				// Add stats.js
+				stats = new Stats();
+				stats.dom.style.width = '80px';
+				stats.dom.style.height = '48px';
+				document.body.appendChild( stats.dom );
+
+				// statsMesh = new HTMLMesh( stats.dom, THREE.DoubleSide );
+				// statsMesh.position.x = - 0.75;
+				// statsMesh.position.y = 2;
+				// statsMesh.position.z = - 0.6;
+				// statsMesh.rotation.y = Math.PI / 4;
+				// statsMesh.scale.setScalar( 2.5 );
+				// group.add( statsMesh );
+
+				debugDiv = document.createElement("div");
+				debugDiv.className = "lil-gui autoPlace"
+				debugDiv.style.width = '500px';
+				debugDiv.style.height = '500px';
+				debugDiv.style.visibility = 'hidden';
+				debugDiv.innerText = 'hello';
+				debugDiv.style.padding = '6px';
+				document.body.appendChild(debugDiv);
+				
+				debugMesh = new HTMLMesh( debugDiv, THREE.DoubleSide );
+				debugMesh.position.x = 0.25;
+				debugMesh.position.y = 1;
+				debugMesh.position.z = -1.6;
+				debugMesh.rotation.y = 0;
+				debugMesh.scale.setScalar( 2.5 );
+				group.add(debugMesh);
+			}
+
 			function onWindowResize() {
 
 				camera.aspect = window.innerWidth / window.innerHeight;
@@ -341,17 +448,34 @@
 				renderer.setSize( window.innerWidth, window.innerHeight );
 			}
 
+			let counter = 0;
 			function animate() {
+
+				if (counter++ > 60) {
+					counter = 0;
+					if (controller1 && controller1.gamepad) {
+						debugDiv.innerText = JSON.stringify( controller1.gamepad );
+					}
+				}
+
 				const time = performance.now() * 0.0002;
 				const torus = scene.getObjectByName( 'torus' );
-				torus.rotation.x = time * 0.4;
-				torus.rotation.y = time;
+				if (torus) {
+					torus.rotation.x = time * 0.4;
+					torus.rotation.y = time;
+				}
 
 				renderer.render( scene, camera );
 				stats.update();
 
 				// Canvas elements doesn't trigger DOM updates, so we have to update the texture
-				statsMesh.material.map.update();
+				if (statsMesh) {
+					statsMesh.material.map.update();
+				}
+
+				if (debugMesh) {
+					debugMesh.material.map.update();					
+				}
 
 				const delta = clock.getDelta();
 
