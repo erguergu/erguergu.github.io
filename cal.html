@@ -29,6 +29,8 @@ const events = [
 [2024,9,14,'U','306'],
 [2024,10,5,'U','307'],
 [2024,10,26,'U','308'],
+[2024,11,16,'U','309'],
+[2024,12,7,'U','310'],
 
 
 // Holidays
@@ -200,16 +202,20 @@ h3.monthName {
 </head>
 <body id="body">
 
-    <div class="flex-grid">
-      <div class="flex-col">
-        <div class="flex-row" id="month_container"></div>
-      </div>
+  <div>
+    <h2 id="yearDisplay"></h2>
+    <div id="yearPicker"></div>
+  </div>
+  <div class="flex-grid">
+    <div class="flex-col">
+      <div class="flex-row" id="month_container"></div>
     </div>
+  </div>
 
 </body>
 <script>
 // calEvents will be built dynamically later
-const calEvents = [];
+let calEvents = [];
 
 function canvasDraw(canvas) {
 
@@ -258,87 +264,95 @@ function canvasDraw(canvas) {
   }
 }
 
-const caldata = [
-  { "month": "January" },
-  { "month": "February" },
-  { "month": "March" },
-  { "month": "April" },
-  { "month": "May" },
-  { "month": "June" },
-  { "month": "July" },
-  { "month": "August" },
-  { "month": "September" },
-  { "month": "October" },
-  { "month": "November" },
-  { "month": "December" }
-];
-const monthContainer = document.getElementById("month_container");
-let monthElementId = "";
-let calHtml = '';
-const today = new Date();
-let weekNum = 1;
 
-for (const month of caldata) {
+function drawCal(year) {
 
-  const currentDay = new Date(`${month.month} 1, 2024`);
-  const monthNum = currentDay.getMonth();
-  let dayNum = currentDay.getDay();
+  setYearDisplay(year);
+  const caldata = [
+    { "month": "January" },
+    { "month": "February" },
+    { "month": "March" },
+    { "month": "April" },
+    { "month": "May" },
+    { "month": "June" },
+    { "month": "July" },
+    { "month": "August" },
+    { "month": "September" },
+    { "month": "October" },
+    { "month": "November" },
+    { "month": "December" }
+  ];
+  const monthContainer = document.getElementById("month_container");
+  let monthElementId = "";
+  let calHtml = '';
+  const today = new Date();
+  let weekNum = 1;
 
-  const thisMonthClass = today.getMonth() == monthNum ? ' current' : '';
-  calHtml += "<div class='item month" + thisMonthClass + "' id='m" + month.month + "'><div class='item-desc'><h3 class='monthName'>" + month.month + "</h3><div class='flex-row'>";
-  let monthStarted = false;
-  let monthCompleted = false;
+  for (const month of caldata) {
 
-  while (!monthCompleted) {
-  
-    for (let weekDay = 0; weekDay < 7; weekDay++ ) {
+    const currentDay = new Date(`${month.month} 1, ${year}`);
+    const monthNum = currentDay.getMonth();
+    let dayNum = currentDay.getDay();
+
+    const thisMonthClass = (today.getMonth() == monthNum && today.getFullYear() == year) ? ' current' : '';
+    calHtml += "<div class='item month" + thisMonthClass + "' id='m" + month.month + "'><div class='item-desc'><h3 class='monthName'>" + month.month + "</h3><div class='flex-row'>";
+    let monthStarted = false;
+    let monthCompleted = false;
+
+    while (!monthCompleted) {
     
-      if (weekDay == currentDay.getDay()) {
-        // we found the first day of the month
-        monthStarted = true;
-      }
+      for (let weekDay = 0; weekDay < 7; weekDay++ ) {
+      
+        if (weekDay == currentDay.getDay()) {
+          // we found the first day of the month
+          monthStarted = true;
+        }
 
-      let idString = "";
-      let realDayString = "";
-      if (monthStarted && !monthCompleted) {
-        const monthNum = currentDay.getMonth() + 1;
-        idString = "id='d" + currentDay.getFullYear() + "-" + monthNum + "-" + currentDay.getDate() + "'";
-        realDayString = " real";
-      }
-      
-      const weekNumStr = ` week-${weekNum} week-${weekNum % 2 == 0 ? 'even' : 'odd'}`;
-      calHtml += "<div class='item day" + realDayString + weekNumStr + "'" + idString + " >";
-      if (monthStarted) {
-      
-        if (!monthCompleted) {
-          calHtml += "<div>" + currentDay.getDate() + "</div>";
-          if (today.getDate() == currentDay.getDate() && today.getMonth() == currentDay.getMonth()) {
-            monthElementId = "m" + month.month;
+        let idString = "";
+        let realDayString = "";
+        if (monthStarted && !monthCompleted) {
+          const monthNum = currentDay.getMonth() + 1;
+          idString = "id='d" + currentDay.getFullYear() + "-" + monthNum + "-" + currentDay.getDate() + "'";
+          realDayString = " real";
+        }
+        
+        const weekNumStr = ` week-${weekNum} week-${weekNum % 2 == 0 ? 'even' : 'odd'}`;
+        calHtml += "<div class='item day" + realDayString + weekNumStr + "'" + idString + " >";
+        if (monthStarted) {
+        
+          if (!monthCompleted) {
+            calHtml += "<div>" + currentDay.getDate() + "</div>";
+            if (today.getDate() == currentDay.getDate() && today.getMonth() == currentDay.getMonth() && today.getFullYear() == year) {
+              monthElementId = "m" + month.month;
+            }
+          }
+        
+          currentDay.setDate(currentDay.getDate() + 1);
+          if (currentDay.getDay() == 0 && monthStarted && !monthCompleted) {
+            weekNum++;
+          }
+        
+          if (monthNum != currentDay.getMonth()) {
+            monthCompleted = true;
+            monthStarted = false;
           }
         }
+        calHtml += "</div>";
       
-        currentDay.setDate(currentDay.getDate() + 1);
-        if (currentDay.getDay() == 0 && monthStarted && !monthCompleted) {
-          weekNum++;
-        }
-      
-        if (monthNum != currentDay.getMonth()) {
-          monthCompleted = true;
-          monthStarted = false;
-        }
       }
-      calHtml += "</div>";
     
     }
-  
+    calHtml += "</div></div></div>";
   }
-  calHtml += "</div></div></div>";
+  monthContainer.innerHTML = calHtml;
+  if  (monthElementId != '') {
+    let currMonthEl = document.getElementById(monthElementId);
+    setTimeout(function() {
+    currMonthEl.scrollIntoView();
+    }, 2);
+  }
 }
-monthContainer.innerHTML = calHtml;
-let currMonthEl = document.getElementById(monthElementId);
-setTimeout(function() {
-currMonthEl.scrollIntoView();
-}, 2);
+
 
 let modalShowing = false;
 document.getElementById('body').addEventListener('mouseup', (e) => {
@@ -455,81 +469,123 @@ function handleRecurringDate(dateEl, evt, recurDate, recurFunc, actionFunc) {
   }
 }
 
-for (let evt of events) {
-  
-  //[2024,1,1,'H','New Years'],
-  const year = evt[0];
-  const mnth = evt[1];
-  const dy = evt[2];
-  const tpe = evt[3];
-  const nme = evt[4];
-  
-  const hasCanv = tpe == 'T' || tpe == 'P' || tpe == 'B' || tpe == 'U' || tpe == 'D';
 
-  const dateElId = 'd'+year+'-'+mnth+'-'+dy;
-  pushCalEvent(dateElId, evt);
-  const dateEl = document.getElementById(dateElId);
-  addEventClass(dateEl);
-  
-  let canv = null;
-  let c = null;
-  if (hasCanv) {
-    canv = document.createElement("canvas")
-    dateEl.prepend(canv);
-    canv.width = 60;
-    canv.height = 60;
+function drawEvents(selectedYear) {
+  calEvents = [];
+  for (let evt of events) {
+    
+    //[2024,1,1,'H','New Years'],
+    const year = evt[0];
+    const mnth = evt[1];
+    const dy = evt[2];
+    const tpe = evt[3];
+    const nme = evt[4];
 
-    c = new canvasDraw(canv);
-  }
+    if (year != selectedYear) {
+      continue;
+    }
+    
+    const hasCanv = tpe == 'T' || tpe == 'P' || tpe == 'B' || tpe == 'U' || tpe == 'D';
 
-  if (tpe == 'H') {
-    dateEl.getElementsByTagName("div")[0].style.backgroundColor = '#8bd18b';
-  } else if (tpe == 'L') {
-    dateEl.getElementsByTagName("div")[0].style.backgroundColor = 'lime';
-  } else if (tpe == 'S') {
-    dateEl.getElementsByTagName("div")[0].style.backgroundColor = '#7bfff2';
+    const dateElId = 'd'+year+'-'+mnth+'-'+dy;
+    pushCalEvent(dateElId, evt);
+    const dateEl = document.getElementById(dateElId);
+    addEventClass(dateEl);
+    
+    let canv = null;
+    let c = null;
+    if (hasCanv) {
+      canv = document.createElement("canvas")
+      dateEl.prepend(canv);
+      canv.width = 60;
+      canv.height = 60;
+
+      c = new canvasDraw(canv);
+    }
+
+    if (tpe == 'H') {
+      dateEl.getElementsByTagName("div")[0].style.backgroundColor = '#8bd18b';
+    } else if (tpe == 'L') {
+      dateEl.getElementsByTagName("div")[0].style.backgroundColor = 'lime';
+    } else if (tpe == 'S') {
+      dateEl.getElementsByTagName("div")[0].style.backgroundColor = '#7bfff2';
+    }
+    
+    if (tpe == 'T') {
+      const color = '#bce9e9';
+      c.drawCircle(color, 30, 30, 12, 0, Math.PI * 2, 5);
+      const recurDate = new Date(year, mnth-1, dy);
+      handleRecurringDate(dateEl, evt, recurDate, (dte) => { dte.setDate(dte.getDate()+14); }, (rc) => { 
+        rc.drawCircle(color, 30, 30, 12, 0, Math.PI * 2, 5);
+      });
+    }
+    
+    if (tpe == 'P') {
+      const color = '#dbc8e3';
+      c.drawCircle(color, 30, 30, 12, 0, Math.PI * 2, 5);
+      const recurDate = new Date(year, mnth-1, dy);
+      handleRecurringDate(dateEl, evt, recurDate, (dte) => { dte.setDate(dte.getDate()+14); }, (rc) => { 
+        rc.drawCircle(color, 30, 30, 12, 0, Math.PI * 2, 5);
+      });
+    }
+    
+    if (tpe == 'U') {
+      c.drawPolygon("blue", 30, 30, 20, 8, 3);
+    } else if (tpe == 'B') {
+      c.drawFilledPolygon("red", "red", 30, 30, 25, 4, 3);
+    } else if (tpe == 'D') {
+      c.drawFilledPolygon("black", "yellow", 30, 30, 28, 4, 3);
+    }
+    
   }
-  
-  if (tpe == 'T') {
-    const color = '#bce9e9';
-    c.drawCircle(color, 30, 30, 12, 0, Math.PI * 2, 5);
-    const recurDate = new Date(year, mnth-1, dy);
-    handleRecurringDate(dateEl, evt, recurDate, (dte) => { dte.setDate(dte.getDate()+14); }, (rc) => { 
-      rc.drawCircle(color, 30, 30, 12, 0, Math.PI * 2, 5);
-    });
-  }
-  
-  if (tpe == 'P') {
-    const color = '#dbc8e3';
-    c.drawCircle(color, 30, 30, 12, 0, Math.PI * 2, 5);
-    const recurDate = new Date(year, mnth-1, dy);
-    handleRecurringDate(dateEl, evt, recurDate, (dte) => { dte.setDate(dte.getDate()+14); }, (rc) => { 
-      rc.drawCircle(color, 30, 30, 12, 0, Math.PI * 2, 5);
-    });
-  }
-  
-  if (tpe == 'U') {
-    c.drawPolygon("blue", 30, 30, 20, 8, 3);
-  } else if (tpe == 'B') {
-    c.drawFilledPolygon("red", "red", 30, 30, 25, 4, 3);
-  } else if (tpe == 'D') {
-    c.drawFilledPolygon("black", "yellow", 30, 30, 28, 4, 3);
-  }
-  
 }
 
-/*const todayDate = new Date();
-const todayMonth = todayDate.getMonth()+1;
-const todayElId = 'd'+todayDate.getFullYear()+'-'+todayMonth+'-'+todayDate.getDate();
-const todayEl = document.getElementById(todayElId);
+function getYears() {
+  const years = [];
+  for (let evt of events) {
+    if (!years.find(p => p == evt[0])) {
+      years.push(evt[0]);
+    }
+  }
+  years.sort((a, b) => {
+    if (a < b) {
+      return 1;
+    } else if (b < a) {
+      return -1;
+    } return 0;
+  });
 
-const tcanv = document.createElement("canvas")
-todayEl.prepend(tcanv);
-tcanv.width = 60;
-tcanv.height = 60;
-const tc = new canvasDraw(tcanv);
-tc.drawFilledPolygon("black", "yellow", 30, 30, 28, 4, 3);*/
+  let ypHtml = '';
 
+  for (let year of years) {
+    ypHtml += `<option>${year}</option>`;
+  }
+
+  ypHtml = `<select onchange='selectYear(this)'>
+    ${ypHtml}
+  </select>`;
+  const ypEl = document.getElementById('yearPicker');
+  ypEl.innerHTML = ypHtml;
+
+  return years[0];
+}
+
+function selectYear(e) {
+  drawCalAndEvents(e.value);
+}
+
+function setYearDisplay(year) {
+  const h2el = document.getElementById('yearDisplay');
+  h2el.innerText = year;
+}
+
+function drawCalAndEvents(selectedYear) {
+  drawCal(selectedYear);
+  drawEvents(selectedYear);
+}
+
+const firstYear = getYears();
+drawCalAndEvents(firstYear);
 
 </script>
 </html>
