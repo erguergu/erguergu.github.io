@@ -3,9 +3,9 @@
 <script>
 
 // events is the list we build manually now.
+// 2025
 const events = [
 
-// 2025
   // H
   [2025,1,1,'H','New Years'],
   [2025,1,20,'H','MLK'],
@@ -27,6 +27,11 @@ const events = [
 
   // U
   [2025,2,9,'U','312'],
+
+];
+
+// 2024 and older
+events.push(...[
 
 // 2024
   // Leave
@@ -92,7 +97,7 @@ const events = [
   [2024,3,11,'L','299 Leave'],
   [2024,4,15,'L','300 Leave'],
 
-];
+]);
 
 const todayDate = new Date();
 events.unshift([todayDate.getFullYear(),todayDate.getMonth()+1,todayDate.getDate(),'D','Today']);
@@ -102,6 +107,11 @@ events.unshift([todayDate.getFullYear(),todayDate.getMonth()+1,todayDate.getDate
 
 body {
   font-family: sans-serif;
+}
+
+.yearRow {
+  text-align: center;
+  margin-bottom: 15px;
 }
 
 .flex-grid .item {
@@ -227,8 +237,8 @@ h3.monthName {
 </head>
 <body id="body">
 
-  <div>
-    <h2 id="yearDisplay"></h2>
+  <div class="yearRow">
+    <h1 id="yearDisplay"></h1>
     <div id="yearPicker"></div>
   </div>
   <div class="flex-grid">
