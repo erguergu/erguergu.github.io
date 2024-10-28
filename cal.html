@@ -5,68 +5,92 @@
 // events is the list we build manually now.
 const events = [
 
-// Leave
-[2024,6,3,'L','302 Leave'],
-[2024,7,1,'L','Mom'],
-[2024,7,5,'L','4th of July Leave'],
+// 2025
+  // H
+  [2025,1,1,'H','New Years'],
+  [2025,1,20,'H','MLK'],
+  [2025,2,17,'H','Presidents'],
+  [2025,5,26,'H','Memorial Day'],
+  [2025,6,19,'H','Juneteenth'],
+  [2025,7,4,'H','Independence Day'],
+  [2025,9,1,'H','Labor Day'],
+  [2025,10,13,'H','Columbus Day'],
+  [2025,11,11,'H','Veterans Day'],
+  [2025,11,27,'H','Thanksgiving'],
+  [2025,12,25,'H','Christmas'],
 
-// Bad
-[2024,5,7,'B',"Let's Get Aligned"],
-[2024,5,8,'B',"Let's Get Aligned"],
-[2024,5,9,'B',"Let's Get Aligned"],
-[2024,8,25,'B','CM'],
-[2024,10,13,'B','Epic'],
-[2024,10,30,'B','Meeting'],
-[2024,10,31,'B','Deadline'],
+  // Timecard End
+  [2025,1,10,'T',''],
 
-// U
-[2024,3,9,'U','299'],
-[2024,4,13,'U','300'],
-[2024,5,4,'U','301'],
-[2024,6,1,'U','302'],
-[2024,6,29,'U','303'],
-[2024,7,27,'U','304'],
-[2024,8,17,'U','305'],
-[2024,9,14,'U','306'],
-[2024,10,5,'U','307'],
-[2024,10,26,'U','308'],
-[2024,11,16,'U','309'],
-[2024,12,7,'U','310'],
+  // Payday
+  [2025,1,4,'P',''],
+
+  // U
+  [2025,2,9,'U','312'],
+
+// 2024
+  // Leave
+  [2024,6,3,'L','302 Leave'],
+  [2024,7,1,'L','Mom'],
+  [2024,7,5,'L','4th of July Leave'],
+
+  // Bad
+  [2024,5,7,'B',"Let's Get Aligned"],
+  [2024,5,8,'B',"Let's Get Aligned"],
+  [2024,5,9,'B',"Let's Get Aligned"],
+  [2024,8,25,'B','CM'],
+  [2024,10,13,'B','Epic'],
+  [2024,10,30,'B','Meeting'],
+  [2024,10,31,'B','Deadline'],
+
+  // U
+  [2024,3,9,'U','299'],
+  [2024,4,13,'U','300'],
+  [2024,5,4,'U','301'],
+  [2024,6,1,'U','302'],
+  [2024,6,29,'U','303'],
+  [2024,7,27,'U','304'],
+  [2024,8,17,'U','305'],
+  [2024,9,14,'U','306'],
+  [2024,10,5,'U','307'],
+  [2024,10,26,'U','308'],
+  [2024,11,16,'U','309'],
+  [2024,12,7,'U','310'],
 
 
-// Holidays
-[2024,1,1,'H','New Years'],
-[2024,1,15,'H','MLK'],
-[2024,2,19,'H','Presidents'],
-[2024,5,27,'H','Memorial Day'],
-[2024,6,19,'H','Juneteenth'],
-[2024,7,4,'H','Independence Day'],
-[2024,9,2,'H','Labor Day'],
-[2024,10,14,'H','Columbus Day'],
-[2024,11,11,'H','Veterans Day'],
-[2024,11,28,'H','Thanksgiving'],
-[2024,12,25,'H','Christmas'],
+  // H
+  [2024,1,1,'H','New Years'],
+  [2024,1,15,'H','MLK'],
+  [2024,2,19,'H','Presidents'],
+  [2024,5,27,'H','Memorial Day'],
+  [2024,6,19,'H','Juneteenth'],
+  [2024,7,4,'H','Independence Day'],
+  [2024,9,2,'H','Labor Day'],
+  [2024,10,14,'H','Columbus Day'],
+  [2024,11,11,'H','Veterans Day'],
+  [2024,11,28,'H','Thanksgiving'],
+  [2024,12,25,'H','Christmas'],
 
 
-// Timecard End
-[2024,1,12,'T',''],
+  // Timecard End
+  [2024,1,12,'T',''],
 
-// Payday
-[2024,1,6,'P',''],
+  // Payday
+  [2024,1,6,'P',''],
 
-// Old Leave
-[2024,1,8,'L','LiF Leave'],
-[2024,1,9,'L','LiF Leave'],
-[2024,1,10,'L','LiF Leave'],
-[2024,1,11,'L','LiF Leave'],
-[2024,1,12,'L','LiF Leave'],
-[2024,1,16,'L','LiF Leave'],
-[2024,1,17,'L','LiF Leave'],
-[2024,1,18,'L','LiF Leave'],
-[2024,1,19,'L','LiF Leave'],
+  // Old Leave
+  [2024,1,8,'L','LiF Leave'],
+  [2024,1,9,'L','LiF Leave'],
+  [2024,1,10,'L','LiF Leave'],
+  [2024,1,11,'L','LiF Leave'],
+  [2024,1,12,'L','LiF Leave'],
+  [2024,1,16,'L','LiF Leave'],
+  [2024,1,17,'L','LiF Leave'],
+  [2024,1,18,'L','LiF Leave'],
+  [2024,1,19,'L','LiF Leave'],
 
-[2024,3,11,'L','299 Leave'],
-[2024,4,15,'L','300 Leave'],
+  [2024,3,11,'L','299 Leave'],
+  [2024,4,15,'L','300 Leave'],
 
 ];
 
@@ -542,7 +566,9 @@ function drawEvents(selectedYear) {
 }
 
 function getYears() {
-  const years = [];
+  const thisYear = todayDate.getFullYear();
+  const years = [thisYear];
+
   for (let evt of events) {
     if (!years.find(p => p == evt[0])) {
       years.push(evt[0]);
@@ -559,7 +585,8 @@ function getYears() {
   let ypHtml = '';
 
   for (let year of years) {
-    ypHtml += `<option>${year}</option>`;
+    const sel = year == thisYear ? ' selected' : '';
+    ypHtml += `<option${sel}>${year}</option>`;
   }
 
   ypHtml = `<select onchange='selectYear(this)'>
@@ -568,7 +595,7 @@ function getYears() {
   const ypEl = document.getElementById('yearPicker');
   ypEl.innerHTML = ypHtml;
 
-  return years[0];
+  return thisYear;
 }
 
 function selectYear(e) {
