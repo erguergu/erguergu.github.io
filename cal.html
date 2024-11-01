@@ -99,6 +99,8 @@ events.push(...[
 
 ]);
 
+const leaveStarts = ['2024-01-14','2025-01-12','2026-01-11','2027-01-10','2028-01-09','2029-01-07','2030-01-06'];
+
 const todayDate = new Date();
 events.unshift([todayDate.getFullYear(),todayDate.getMonth()+1,todayDate.getDate(),'D','Today']);
 
@@ -112,6 +114,20 @@ body {
 .yearRow {
   text-align: center;
   margin-bottom: 15px;
+}
+
+.yearRow h1 {
+  font-size: 50px;
+}
+
+.yearRow label {
+  margin: 10px;
+}
+
+#yearPicker select {
+  font-size: 20px;
+  padding: 6px;
+  width: 90px;
 }
 
 .flex-grid .item {
@@ -599,7 +615,7 @@ function getYears() {
     ypHtml += `<option${sel}>${year}</option>`;
   }
 
-  ypHtml = `<select onchange='selectYear(this)'>
+  ypHtml = `<label for='selectYear'>Select Year:</label><select id='selectYear' name='selectYear' onchange='selectYear(this)'>
     ${ypHtml}
   </select>`;
   const ypEl = document.getElementById('yearPicker');
