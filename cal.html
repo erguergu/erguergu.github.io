@@ -279,6 +279,10 @@ h3.monthName {
   box-shadow: 3px 3px 5px grey;
 }
 
+.leaveRow {
+  text-align: center;
+}
+
 </style>
 </head>
 <body id="body">
@@ -292,6 +296,7 @@ h3.monthName {
       <div class="flex-row" id="month_container"></div>
     </div>
   </div>
+  <div class="leaveRow"></div>
 
 </body>
 <script>
@@ -550,6 +555,25 @@ function handleRecurringDate(dateEl, evt, recurDate, recurFunc, actionFunc) {
   }
 }
 
+let leaveProcessed = false;
+function processLeave(year, mnth, dy, tpe, nme) {
+
+  if (tpe != 'L' || leaveProcessed) {
+    return;
+  }
+
+  for (let i = leaveStarts.length-1; i >= 0; i--) {
+    const leaveStart = leaveStarts[i];
+    const thisDate = new Date(year, mnth-1, dy);
+    const startParts = leaveStart.start.split('-');
+    const startDate = new Date(parseInt(startParts[0]), parseInt(startParts[1])-1, parseInt(startParts[2]));
+    if (thisDate > startDate) {
+      const thisHours = parseFloat(nme);
+      leaveStart.hours += thisHours;
+      break;
+    }
+  }
+}
 
 function drawEvents(selectedYear) {
   calEvents = [];
@@ -561,6 +585,8 @@ function drawEvents(selectedYear) {
     const dy = evt[2];
     const tpe = evt[3];
     const nme = evt[4];
+
+    processLeave(year, mnth, dy, tpe, nme);
 
     if (year != selectedYear) {
       continue;
@@ -619,6 +645,13 @@ function drawEvents(selectedYear) {
     }
     
   }
+
+  leaveProcessed = true;
+  const currentLeave = leaveStarts.find((p) => parseInt(p.start) == parseInt(selectedYear));
+  const leaveRow = document.getElementsByClassName('leaveRow')[0];
+  const uol = 156-currentLeave.hours;
+  const uold = uol/8;
+  leaveRow.innerText = `Start: ${currentLeave.start}, UoL: ${uol} (${uold})`;
 }
 
 function getYears() {
