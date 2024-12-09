@@ -39,9 +39,20 @@ events.push(...[
 
 // 2024
   // Leave
-  [2024,6,3,'L','302 Leave'],
-  [2024,7,1,'L','Mom'],
-  [2024,7,5,'L','4th of July Leave'],
+  [2024,6,3,'L','8 - 302 Leave'],
+  [2024,7,1,'L','8 - Mom'],
+  [2024,7,5,'L','8 - 4th of July Leave'],
+  [2024,8,16,'L','8'],
+  [2024,10,4,'L','8'],
+  [2024,12,26,'L','6'],
+  [2024,12,27,'L','8'],
+  [2024,12,30,'L','8'],
+  [2024,12,31,'L','8'],
+  [2024,1,2,'L','8'],
+  [2024,1,3,'L','8'],
+  [2024,1,8,'L','8'],
+  [2024,1,9,'L','8'],
+  [2024,1,10,'L','8'],
 
   // Bad
   [2024,5,7,'B',"Let's Get Aligned"],
@@ -110,7 +121,15 @@ events.push(...[
 
 ]);
 
-const leaveStarts = ['2024-01-14','2025-01-12','2026-01-11','2027-01-10','2028-01-09','2029-01-07','2030-01-06'];
+const leaveStarts = [
+  { start: '2024-01-14', hours: 0 }
+  , { start: '2025-01-12', hours: 0 }
+  , { start: '2026-01-11', hours: 0 }
+  , { start: '2027-01-10', hours: 0 }
+  , { start: '2028-01-09', hours: 0 }
+  , { start: '2029-01-07', hours: 0 }
+  , { start: '2030-01-06', hours: 0 }
+];
 
 const todayDate = new Date();
 events.unshift([todayDate.getFullYear(),todayDate.getMonth()+1,todayDate.getDate(),'D','Today']);
